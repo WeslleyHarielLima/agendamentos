@@ -1,0 +1,12 @@
+pre-commit:
+  commands:
+    check:
+      run: npx prettier --write {staged_files}
+      glob: '*.{js,jsx,mjs,ts,tsx,css,json,md}'
+      stage_fixed: true
+
+pre-push:
+  commands:
+    validate:
+      glob: '*.{ts,tsx}'
+      run: pnpm validate:typecheck
