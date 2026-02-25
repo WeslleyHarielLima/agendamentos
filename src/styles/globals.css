@@ -237,6 +237,13 @@
   }
 }
 
+/* Date/Time Input — dark mode icon */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
 /* Toast Error Styles */
 [data-sonner-toast][data-type='error'] {
   background-color: #dc2626 !important;
