@@ -88,72 +88,140 @@
 
 ---
 
-## Fase 3 — Edição e Exclusão
+## ~~Fase 3 — Edição e Exclusão~~ ✅ CONCLUÍDA
 
 ### Passo 11 — Editar Agendamento
 
-- [ ] Criar página/modal de edição: `src/app/agendamento/[id]/editar/`
-- [ ] Pré-popular formulário com dados existentes (busca por ID)
-- [ ] Criar `src/actions/atualizar-compromisso.ts`
-  - Validar com Zod
-  - Atualizar no banco
+- [x] Dialog de edição com formulário pré-populado (`src/components/ui/edit-appointment-form/`)
+- [x] Busca dados do compromisso existente via props
+- [x] `src/actions/atualizar-compromisso.ts`
+  - Validação com Zod
+  - `update` no banco via Prisma
   - `revalidatePath('/')`
 
 ### Passo 12 — Excluir Agendamento
 
-- [ ] Adicionar botão de exclusão no `AppointmentCard` ou na página de edição
-- [ ] Criar `src/actions/deletar-compromisso.ts`
-  - Confirmar exclusão (dialog de confirmação)
-  - Deletar no banco
+- [x] Botões de editar (lápis) e excluir (lixeira) no `AppointmentCard` — visíveis ao hover
+- [x] `src/actions/deletar-compromisso.ts`
+  - Dialog de confirmação com nome do paciente
+  - `delete` no banco via Prisma
   - `revalidatePath('/')`
 
 ---
 
-## Fase 4 — Busca e Navegação
+## Fase 4 — Layout Global + Navegação
 
-### Passo 13 — Busca dinâmica
+### Passo 13 — Sidebar de navegação
 
-- [ ] Adicionar input de busca na página principal
-- [ ] Filtrar compromissos por nome do paciente ou procedimento
-- [ ] Usar `searchParams` do Next.js para busca server-side (sem estado no cliente)
-- [ ] Debounce no input de busca
-
-### Passo 14 — DatePicker aprimorado + Calendar de navegação
-
-- [ ] Melhorar o `DatePicker` com seleção visual de mês/ano
-- [ ] Adicionar componente `Calendar` para navegar entre datas na listagem
-- [ ] Criar `NavigationButton` (anterior/próximo dia ou semana)
-
-### Passo 15 — Refatorar Server Actions
-
-- [ ] Centralizar lógica de validação e tratamento de erros
-- [ ] Padronizar retorno das actions: `{ success: boolean; error?: string; data?: T }`
+- [ ] `src/components/ui/sidebar/sidebar.tsx` — componente client com `usePathname`
+  - Logo/título do sistema
+  - Links: Agenda (`/`), Pacientes (`/pacientes`), Procedimentos (`/procedimentos`), Relatórios (`/relatorios`)
+  - Link ativo destacado com cor brand
+  - Ícones: Calendar, Users, Stethoscope, BarChart2 (lucide-react)
+- [ ] `src/app/layout.tsx` — layout `flex` com sidebar fixa 240px + `flex-1` para conteúdo
 
 ---
 
-## Fase 5 — Ajustes Finais e Deploy
+## Fase 5 — Cadastro de Procedimentos
 
-### Passo 16 — Ajustes finais de UI/UX
+### Passo 14 — Schema + Actions de Procedimento
 
-- [ ] Revisar responsividade (mobile-first)
-- [ ] Estados vazios (sem agendamentos no período)
-- [ ] Loading states (Suspense / skeleton)
-- [ ] Acessibilidade básica (labels, aria)
+- [ ] `prisma/schema.prisma` — novo model `Procedimento` (id, nome, valor: Decimal, descricao, ativo)
+- [ ] `npx prisma db push` + `npx prisma generate`
+- [ ] `src/actions/criar-procedimento.ts`
+- [ ] `src/actions/atualizar-procedimento.ts`
+- [ ] `src/actions/deletar-procedimento.ts` — desativação lógica (`ativo = false`)
+- [ ] `src/actions/listar-procedimentos.ts`
+- [ ] `src/lib/schemas/procedimento-schema.ts` — Zod schema
 
-### Passo 17 — Deploy
+### Passo 15 — Página de Procedimentos
 
-- [ ] Provisionar banco PostgreSQL (Neon, Supabase ou Railway)
-- [ ] Configurar variáveis de ambiente na plataforma de deploy
-- [ ] Deploy na Vercel (ou plataforma escolhida)
-- [ ] Rodar `prisma migrate deploy` em produção
-- [ ] Testar fluxo completo em produção
+- [ ] `src/app/procedimentos/page.tsx` — tabela de procedimentos + botão "Novo Procedimento"
+- [ ] `src/components/ui/procedure-form/procedure-form.tsx` — Dialog de criação/edição
+  - Campos: nome, valor (R$), descrição opcional
+  - Valor formatado em BRL (Intl.NumberFormat)
 
 ---
 
-## Ordem de Prioridade
+## Fase 6 — Cadastro de Pacientes + Migração do Schema
+
+### Passo 16 — Schema completo com relações
+
+- [ ] `prisma/schema.prisma` — atualização completa:
+  - Model `Paciente` (id, nome, telefone, email?, criadoEm)
+  - Enum `StatusCompromisso` (AGENDADO, REALIZADO, CANCELADO)
+  - `Compromisso` atualizado: `pacienteId` FK + `procedimentoId` FK + `status`
+- [ ] Script de migração para preservar dados existentes
+- [ ] `npx prisma db push` + `npx prisma generate`
+
+### Passo 17 — CRUD de Pacientes
+
+- [ ] `src/actions/` — criar, atualizar, deletar, listar, buscarPorId para Paciente
+- [ ] `src/lib/schemas/paciente-schema.ts` — Zod schema
+- [ ] `src/app/pacientes/page.tsx` — lista com busca por nome
+- [ ] `src/components/ui/patient-form/patient-form.tsx` — Dialog de criação/edição
+- [ ] `src/app/pacientes/[id]/page.tsx` — histórico completo do paciente
+
+### Passo 18 — Atualizar formulário de agendamento
+
+- [ ] `src/components/ui/combobox/combobox.tsx` — novo componente (Radix Popover + busca)
+- [ ] `appointment-form.tsx` — campo paciente vira Combobox com autocomplete
+  - Opção "Cadastrar novo paciente" inline
+  - Telefone preenchido automaticamente ao selecionar
+- [ ] `appointment-form.tsx` — campo procedimento vira Combobox
+  - Exibe nome + valor (R$) na lista
+  - Valor do procedimento exibido ao selecionar
+
+---
+
+## Fase 7 — Calendário Mensal
+
+### Passo 19 — Componente de grade do calendário
+
+- [ ] `src/components/ui/calendar/calendar.tsx` — grid 7×5:
+  - Cabeçalho com mês/ano + setas prev/next (links com `searchParams`)
+  - Dia atual destacado
+  - Dias com agendamentos mostram ponto colorido
+  - Dia selecionado destacado com cor brand (`--color-content-brand`)
+
+### Passo 20 — Integração na página principal
+
+- [ ] `src/app/page.tsx` — layout split: calendário fixo à esquerda + agenda filtrada à direita
+- [ ] `src/actions/listar-compromissos.ts` — aceitar filtro de data (`where: { dataMarcacao: { gte, lte } }`)
+- [ ] Filtro por dia e mês via `searchParams` (server-side):
+  - `/?data=2026-02-25` — filtra agendamentos do dia
+  - `/?mes=2026-02` — navega o calendário para o mês
+
+---
+
+## Fase 8 — Relatórios
+
+### Passo 21 — Actions de relatório
+
+- [ ] `src/actions/relatorios/faturamento-por-periodo.ts` — soma de `procedimento.valor` agrupada por data
+- [ ] `src/actions/relatorios/ranking-procedimentos.ts` — count e sum agrupados por `procedimentoId`
+- [ ] `src/actions/relatorios/historico-paciente.ts` — findMany com `where: { pacienteId }`
+
+### Passo 22 — Página de Relatórios
+
+- [ ] `src/app/relatorios/page.tsx` — tabs com 4 seções:
+  1. **Faturamento** — cards de total + gráfico de barras em CSS
+  2. **Procedimentos** — ranking dos mais realizados com receita gerada
+  3. **Histórico por paciente** — select de paciente → lista de atendimentos
+  4. **Exportar** — download CSV via Route Handler
+- [ ] `src/components/ui/relatorios/stat-card.tsx` — card de métrica
+- [ ] `src/components/ui/relatorios/bar-chart.tsx` — gráfico de barras sem lib externa
+- [ ] `src/components/ui/relatorios/period-filter.tsx` — seletor de período
+- [ ] `src/app/api/exportar/route.ts` — Route Handler que gera e serve CSV
+
+---
+
+## Ordem de Execução
 
 ```
-Fase 1 (Formulário) → Fase 2 (Listagem) → Fase 3 (Edição/Exclusão) → Fase 4 (Busca/Nav) → Fase 5 (Deploy)
+Fase 4 (Nav) → Fase 5 (Procedimentos) → Fase 6 (Pacientes + Migração)
+    → Fase 7 (Calendário) → Fase 8 (Relatórios)
 ```
 
-Cada fase entrega valor funcional independente — ao final da Fase 2 já existe um MVP funcional de criação e visualização.
+A Fase 6 depende da 5 (o form de agendamento precisa de procedimentos cadastrados para o combobox).
+Cada fase entrega valor funcional independente — a Fase 4 já organiza a navegação do sistema.
