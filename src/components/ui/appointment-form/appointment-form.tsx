@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
 import { Plus, X } from 'lucide-react';
@@ -41,7 +41,7 @@ export function AppointmentForm() {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CompromissoFormData>({
-    resolver: zodResolver(compromissoFormSchema),
+    resolver: standardSchemaResolver(compromissoFormSchema),
   });
 
   const onSubmit = async (formData: CompromissoFormData) => {
