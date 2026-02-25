@@ -1,7 +1,12 @@
 import { PeriodSection } from '@/components/ui/period-section';
 import { AppointmentForm } from '@/components/ui/appointment-form';
+import { listarCompromissos } from '@/actions/listar-compromissos';
+import { grupoCompromissosporPeriodo } from '@/lib/compromisso-utils';
 
-export default function Home() {
+export default async function Home() {
+  const compromissos = await listarCompromissos();
+  const grupos = grupoCompromissosporPeriodo(compromissos);
+
   return (
     <div className="bg-background-primary p-6">
       <div className="flex items-center justify-between md:m-8 mb-8">
@@ -16,7 +21,12 @@ export default function Home() {
         </div>
         <AppointmentForm />
       </div>
-      <PeriodSection period={[]} />
+
+      <div className="md:mx-8">
+        <PeriodSection type="manha" compromissos={grupos.manha} />
+        <PeriodSection type="tarde" compromissos={grupos.tarde} />
+        <PeriodSection type="noite" compromissos={grupos.noite} />
+      </div>
     </div>
   );
 }

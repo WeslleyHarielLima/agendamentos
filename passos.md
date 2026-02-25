@@ -65,27 +65,26 @@
 
 ---
 
-## Fase 2 — Listagem de Agendamentos
+## ~~Fase 2 — Listagem de Agendamentos~~ ✅ CONCLUÍDA
 
 ### Passo 8 — Buscar compromissos do banco
 
-- [ ] Criar `src/actions/listar-compromissos.ts` (ou query direta no Server Component)
-- [ ] Buscar todos os compromissos ordenados por `dataMarcacao`
+- [x] `src/actions/listar-compromissos.ts` — `findMany` ordenado por `dataMarcacao asc`
 
 ### Passo 9 — Agrupar por período do dia
 
-- [ ] Implementar `grupoCompromissosporPeriodo()` em `page.tsx` (função incompleta no momento)
-  - Manhã: 06:00 – 11:59
-  - Tarde: 12:00 – 17:59
-  - Noite: 18:00 – 23:59
-- [ ] Tipar corretamente (remover `any`)
+- [x] `src/lib/compromisso-utils.ts` — tipos `Compromisso`, `PeriodoKey`, `GruposPorPeriodo`
+- [x] `grupoCompromissosporPeriodo()` — Manhã 06–11h / Tarde 12–17h / Noite 18–05h
+- [x] `page.tsx` convertido para `async` — busca real no banco + agrupamento
 
 ### Passo 10 — Renderizar PeriodSection com dados reais
 
-- [ ] Tipar `PeriodSectionProps` corretamente
-- [ ] Criar componente `AppointmentCard` em `src/components/ui/appointment-card/`
-  - Exibir: nome do paciente, procedimento, horário, telefone
-- [ ] Renderizar lista de cards dentro de cada `PeriodSection`
+- [x] `PeriodSection` reescrito com props tipadas (`type`, `compromissos`)
+- [x] Estado vazio com mensagem "Nenhum agendamento neste período."
+- [x] Contador de agendamentos no header do período
+- [x] `AppointmentCard` criado em `src/components/ui/appointment-card/`
+  - Horário, nome do paciente, procedimento e telefone
+  - Ícones: Clock, User, Stethoscope, Phone (lucide-react)
 
 ---
 
