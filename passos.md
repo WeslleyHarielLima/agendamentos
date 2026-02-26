@@ -231,21 +231,22 @@
 
 ---
 
-## Fase 8 — Calendário Mensal
+## ~~Fase 8 — Calendário Mensal~~ ✅ CONCLUÍDA
 
 ### Passo 22 — Componente de grade do calendário
 
-- [ ] `src/components/ui/calendar/calendar.tsx` — grid 7×5:
+- [x] `src/components/ui/calendar/calendar.tsx` — grid 7×N (linhas dinâmicas):
   - Cabeçalho com mês/ano + setas prev/next (links com `searchParams`)
-  - Dia atual destacado
+  - Dia atual destacado com anel brand
   - Dias com agendamentos mostram ponto colorido
   - Dia selecionado destacado com cor brand (`--color-content-brand`)
 
 ### Passo 23 — Integração na página principal
 
-- [ ] `src/app/page.tsx` — layout split: calendário fixo à esquerda + agenda filtrada à direita
-- [ ] `src/actions/listar-compromissos.ts` — aceitar filtro de data (`where: { dataMarcacao: { gte, lte } }`)
-- [ ] Filtro por dia e mês via `searchParams` (server-side):
+- [x] `src/app/page.tsx` — layout split: calendário fixo à esquerda + agenda filtrada à direita
+- [x] `src/actions/listar-compromissos.ts` — aceita filtro de data (`where: { dataMarcacao: { gte, lte } }`)
+- [x] `src/actions/listar-dias-com-agendamentos.ts` — retorna dias do mês com agendamentos
+- [x] Filtro por dia e mês via `searchParams` (server-side):
   - `/?data=2026-02-25` — filtra agendamentos do dia
   - `/?mes=2026-02` — navega o calendário para o mês
 
