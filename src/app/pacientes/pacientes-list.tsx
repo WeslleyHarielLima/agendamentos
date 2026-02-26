@@ -13,8 +13,19 @@ import { Button } from '@/components/ui/button';
 type Paciente = {
   id: string;
   nome: string;
+  cpf: string | null;
+  dataNascimento: Date | null;
+  sexo: string | null;
   telefone: string;
   email: string | null;
+  cep: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  observacoes: string | null;
   criadoEm: Date;
 };
 
@@ -86,11 +97,14 @@ function DeletePacienteButton({ paciente }: { paciente: Paciente }) {
 export function PacientesList({ pacientes }: PacientesListProps) {
   const [search, setSearch] = useState('');
 
+  const q = search.toLowerCase();
   const filtered = pacientes.filter(
     (p) =>
-      p.nome.toLowerCase().includes(search.toLowerCase()) ||
+      p.nome.toLowerCase().includes(q) ||
       p.telefone.includes(search) ||
-      (p.email?.toLowerCase().includes(search.toLowerCase()) ?? false)
+      (p.cpf?.includes(search) ?? false) ||
+      (p.email?.toLowerCase().includes(q) ?? false) ||
+      (p.cidade?.toLowerCase().includes(q) ?? false)
   );
 
   return (
@@ -101,7 +115,7 @@ export function PacientesList({ pacientes }: PacientesListProps) {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nome, telefone ou e-mail..."
+          placeholder="Buscar por nome, telefone, CPF, e-mail ou cidade..."
           className="flex-1 bg-transparent text-paragraph-medium-size text-content-primary placeholder:text-content-tertiary focus:outline-none"
         />
       </div>
@@ -113,42 +127,55 @@ export function PacientesList({ pacientes }: PacientesListProps) {
             Nenhum paciente encontrado.
           </p>
         ) : (
-          filtered.map((paciente) => (
-            <div
-              key={paciente.id}
-              className="flex items-center gap-4 px-5 py-4 border-b border-border-divisor last:border-b-0 hover:bg-background-primary transition-colors group"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-label-medium-size text-content-primary truncate">
-                  {paciente.nome}
-                </p>
-                <p className="text-paragraph-small-size text-content-tertiary">
-                  {paciente.telefone}
-                  {paciente.email && ` · ${paciente.email}`}
-                </p>
-              </div>
+          filtered.map((paciente) => {
+            const localidade = [paciente.cidade, paciente.estado]
+              .filter(Boolean)
+              .join('/');
+            const subInfo = [
+              paciente.cpf,
+              paciente.telefone,
+              paciente.email,
+              localidade || null,
+            ]
+              .filter(Boolean)
+              .join(' · ');
 
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <PatientForm paciente={paciente}>
-                  <button
-                    className="p-1.5 text-content-secondary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
-                    aria-label="Editar paciente"
-                  >
-                    <Pencil className="size-4" />
-                  </button>
-                </PatientForm>
-                <DeletePacienteButton paciente={paciente} />
-              </div>
-
-              <Link
-                href={`/pacientes/${paciente.id}`}
-                className="p-1.5 text-content-tertiary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
-                aria-label="Ver histórico"
+            return (
+              <div
+                key={paciente.id}
+                className="flex items-center gap-4 px-5 py-4 border-b border-border-divisor last:border-b-0 hover:bg-background-primary transition-colors group"
               >
-                <ChevronRight className="size-4" />
-              </Link>
-            </div>
-          ))
+                <div className="flex-1 min-w-0">
+                  <p className="text-label-medium-size text-content-primary truncate">
+                    {paciente.nome}
+                  </p>
+                  <p className="text-paragraph-small-size text-content-tertiary truncate">
+                    {subInfo}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <PatientForm paciente={paciente}>
+                    <button
+                      className="p-1.5 text-content-secondary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
+                      aria-label="Editar paciente"
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                  </PatientForm>
+                  <DeletePacienteButton paciente={paciente} />
+                </div>
+
+                <Link
+                  href={`/pacientes/${paciente.id}`}
+                  className="p-1.5 text-content-tertiary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
+                  aria-label="Ver histórico"
+                >
+                  <ChevronRight className="size-4" />
+                </Link>
+              </div>
+            );
+          })
         )}
       </div>
     </div>

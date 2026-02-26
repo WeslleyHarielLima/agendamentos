@@ -203,29 +203,31 @@
 
 ---
 
-## Fase 7 — Recibo PDF
+## ~~Fase 7 — Recibo PDF~~ ✅ CONCLUÍDA
 
 ### Passo 20 — Geração do recibo em PDF
 
-- [ ] Instalar `@react-pdf/renderer` para geração de PDF no servidor
-- [ ] `src/app/api/recibo/[id]/route.ts` — Route Handler:
-  - Busca compromisso com `include: { paciente, procedimento }`
+- [x] `@react-pdf/renderer` v4 instalado via npm
+- [x] `next.config.ts` — `@react-pdf/renderer` adicionado a `serverExternalPackages`
+- [x] `src/app/api/recibo/[id]/route.ts` — Route Handler:
+  - Busca compromisso com `include: { paciente, procedimentoRel }`
   - Gera PDF com `@react-pdf/renderer` e retorna como `application/pdf`
-- [ ] `src/lib/pdf/recibo-template.tsx` — template do recibo (componentes do react-pdf):
-  - Cabeçalho: nome da clínica
-  - Dados do paciente: nome, telefone
-  - Dados do atendimento: procedimento, data, descrição/observação
-  - **Valor Cobrado**: valor registrado em `valorCobrado` (editado ou padrão)
-  - Rodapé: data de emissão
+- [x] `src/lib/pdf/recibo-template.tsx` — template do recibo (componentes do react-pdf):
+  - Cabeçalho: nome da clínica + subtítulo "Recibo de Atendimento"
+  - Dados do paciente: nome, telefone, e-mail (se houver)
+  - Dados do atendimento: procedimento, data, observação
+  - **Valor Cobrado**: destaque verde com `valorCobrado`
+  - Rodapé: data de emissão + código do compromisso
 
 ### Passo 21 — UI de download e compartilhamento
 
-- [ ] Após confirmação em `FinalizarAtendimentoDialog`:
-  - Botão **Baixar Recibo** — faz GET em `/api/recibo/[id]` e abre o PDF
-  - Botão **Enviar pelo WhatsApp** — abre `https://wa.me/55{telefone}` com mensagem padrão
+- [x] `FinalizarAtendimentoDialog` — após confirmação exibe tela de ações:
+  - Botão **Baixar Recibo** — `window.open('/api/recibo/[id]', '_blank')`
+  - Botão **Enviar pelo WhatsApp** — abre `https://wa.me/55{telefone}?text=...`
     - Mensagem: _"Olá {nome}! Segue o recibo do atendimento de {procedimento} realizado em {data}."_
     - Funciona sem API externa — abre o app/web do WhatsApp direto
-- [ ] `AppointmentCard` com status REALIZADO exibe botão de ícone para baixar recibo novamente (`FileDown`)
+  - Botão **Fechar** — fecha o dialog e reseta o estado
+- [x] `AppointmentCard` com status REALIZADO exibe botão `FileDown` no hover para baixar recibo
 
 ---
 

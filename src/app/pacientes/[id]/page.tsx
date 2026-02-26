@@ -1,6 +1,17 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
+} from 'lucide-react';
 
 import { buscarPaciente } from '@/actions/buscar-paciente';
 
@@ -29,8 +40,44 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div>
+      <p className="text-paragraph-small-size text-content-tertiary">{label}</p>
+      <p className="text-paragraph-medium-size text-content-primary">{value}</p>
+    </div>
+  );
+}
+
+function SectionCard({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-background-secondary border border-border-primary rounded-2xl p-5">
+      <h3 className="text-label-medium-size text-content-primary mb-4 flex items-center gap-2">
+        <span className="text-content-brand">{icon}</span>
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
 type PageProps = {
   params: Promise<{ id: string }>;
+};
+
+const SEXO_LABEL: Record<string, string> = {
+  MASCULINO: 'Masculino',
+  FEMININO: 'Feminino',
+  OUTRO: 'Outro',
 };
 
 export default async function PacienteDetalhePage({ params }: PageProps) {
@@ -39,9 +86,27 @@ export default async function PacienteDetalhePage({ params }: PageProps) {
 
   if (!paciente) notFound();
 
+  const dataNasc = paciente.dataNascimento
+    ? new Date(paciente.dataNascimento).toLocaleDateString('pt-BR')
+    : null;
+
+  const enderecoLinha1 = [
+    paciente.logradouro,
+    paciente.numero,
+    paciente.complemento,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const enderecoLinha2 = [paciente.bairro, paciente.cidade, paciente.estado]
+    .filter(Boolean)
+    .join(', ');
+  const cepFormatado = paciente.cep;
+
+  const temEndereco = enderecoLinha1 || enderecoLinha2 || cepFormatado;
+
   return (
     <div className="bg-background-primary p-6">
-      <div className="md:m-8 mb-8">
+      <div className="md:m-8 mb-8 max-w-4xl">
         {/* Back */}
         <Link
           href="/pacientes"
@@ -56,14 +121,96 @@ export default async function PacienteDetalhePage({ params }: PageProps) {
           <h1 className="text-title-size text-content-primary mb-1">
             {paciente.nome}
           </h1>
-          <div className="flex flex-wrap gap-3 text-paragraph-medium-size text-content-secondary">
-            <span>{paciente.telefone}</span>
-            {paciente.email && <span>·</span>}
-            {paciente.email && <span>{paciente.email}</span>}
-          </div>
+          <p className="text-paragraph-medium-size text-content-tertiary">
+            {paciente.cpf ? `CPF: ${paciente.cpf}` : 'Paciente cadastrado'}
+            {dataNasc ? ` · ${dataNasc}` : ''}
+            {paciente.sexo
+              ? ` · ${SEXO_LABEL[paciente.sexo] ?? paciente.sexo}`
+              : ''}
+          </p>
         </div>
 
-        {/* History */}
+        {/* Info cards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Contato */}
+          <SectionCard icon={<Phone className="size-4" />} title="Contato">
+            <div className="space-y-3">
+              <InfoRow label="Telefone" value={paciente.telefone} />
+              <InfoRow label="E-mail" value={paciente.email} />
+            </div>
+          </SectionCard>
+
+          {/* Endereço */}
+          {temEndereco ? (
+            <SectionCard icon={<MapPin className="size-4" />} title="Endereço">
+              <div className="space-y-1">
+                {enderecoLinha1 && (
+                  <p className="text-paragraph-medium-size text-content-primary">
+                    {enderecoLinha1}
+                  </p>
+                )}
+                {enderecoLinha2 && (
+                  <p className="text-paragraph-medium-size text-content-primary">
+                    {enderecoLinha2}
+                  </p>
+                )}
+                {cepFormatado && (
+                  <p className="text-paragraph-small-size text-content-tertiary">
+                    CEP: {cepFormatado}
+                  </p>
+                )}
+              </div>
+            </SectionCard>
+          ) : (
+            <SectionCard icon={<MapPin className="size-4" />} title="Endereço">
+              <p className="text-paragraph-small-size text-content-tertiary">
+                Não informado.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Dados pessoais */}
+          <SectionCard
+            icon={<User className="size-4" />}
+            title="Dados Pessoais"
+          >
+            <div className="space-y-3">
+              <InfoRow label="CPF" value={paciente.cpf} />
+              <InfoRow label="Data de Nascimento" value={dataNasc} />
+              <InfoRow
+                label="Sexo"
+                value={
+                  paciente.sexo
+                    ? (SEXO_LABEL[paciente.sexo] ?? paciente.sexo)
+                    : null
+                }
+              />
+              {!paciente.cpf && !dataNasc && !paciente.sexo && (
+                <p className="text-paragraph-small-size text-content-tertiary">
+                  Não informado.
+                </p>
+              )}
+            </div>
+          </SectionCard>
+
+          {/* Observações clínicas */}
+          <SectionCard
+            icon={<FileText className="size-4" />}
+            title="Informações Clínicas"
+          >
+            {paciente.observacoes ? (
+              <p className="text-paragraph-medium-size text-content-secondary whitespace-pre-wrap">
+                {paciente.observacoes}
+              </p>
+            ) : (
+              <p className="text-paragraph-small-size text-content-tertiary">
+                Nenhuma observação.
+              </p>
+            )}
+          </SectionCard>
+        </div>
+
+        {/* Histórico */}
         <div>
           <h2 className="text-label-large-size text-content-primary mb-4 flex items-center gap-2">
             <Calendar className="size-5 text-content-brand" />

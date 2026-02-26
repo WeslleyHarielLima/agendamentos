@@ -19,13 +19,30 @@ enum StatusCompromisso {
   CANCELADO
 }
 
+enum Sexo {
+  MASCULINO
+  FEMININO
+  OUTRO
+}
+
 model Paciente {
-  id           String        @id @default(cuid())
-  nome         String
-  telefone     String
-  email        String?
-  criadoEm    DateTime      @default(now())
-  compromissos Compromisso[]
+  id             String    @id @default(cuid())
+  nome           String
+  cpf            String?
+  dataNascimento DateTime?
+  sexo           Sexo?
+  telefone       String
+  email          String?
+  cep            String?
+  logradouro     String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  cidade         String?
+  estado         String?
+  observacoes    String?
+  criadoEm       DateTime  @default(now())
+  compromissos   Compromisso[]
 
   @@map("pacientes")
 }

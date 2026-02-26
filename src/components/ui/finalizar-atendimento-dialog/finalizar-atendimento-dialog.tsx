@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
-import { CheckCircle, X } from 'lucide-react';
+import { CheckCircle, X, FileDown, MessageCircle } from 'lucide-react';
 
 import { finalizarAtendimento } from '@/actions/finalizar-atendimento';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ type FinalizarAtendimentoDialogProps = {
     id: string;
     pacienteNome: string;
     procedimento: string;
+    telefone: string;
     dataMarcacao: Date | string;
     procedimentoRel: { valor: number } | null;
   };
@@ -27,6 +28,10 @@ function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
 }
 
+function limparTelefone(tel: string): string {
+  return tel.replace(/\D/g, '');
+}
+
 export function FinalizarAtendimentoDialog({
   compromisso,
   open,
@@ -36,6 +41,8 @@ export function FinalizarAtendimentoDialog({
   const [valor, setValor] = useState(String(valorPadrao));
   const [observacao, setObservacao] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [finalizado, setFinalizado] = useState(false);
+  const [valorFinal, setValorFinal] = useState(0);
 
   const handleConfirmar = async () => {
     const valorNum = Number(valor);
@@ -53,28 +60,55 @@ export function FinalizarAtendimentoDialog({
 
     if (result.success) {
       toast.success('Atendimento finalizado com sucesso!');
-      onOpenChange(false);
+      setValorFinal(valorNum);
+      setFinalizado(true);
     } else {
       toast.error(result.error ?? 'Erro ao finalizar atendimento');
-      setIsSaving(false);
     }
+    setIsSaving(false);
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setFinalizado(false);
+    setValor(String(valorPadrao));
+    setObservacao('');
+  };
+
+  const handleBaixarRecibo = () => {
+    window.open(`/api/recibo/${compromisso.id}`, '_blank');
+  };
+
+  const handleWhatsApp = () => {
+    const tel = limparTelefone(compromisso.telefone);
+    const data = toDate(compromisso.dataMarcacao);
+    const dataStr = data.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const msg = `Olá ${compromisso.pacienteNome}! Segue o recibo do atendimento de ${compromisso.procedimento} realizado em ${dataStr}.`;
+    window.open(
+      `https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`,
+      '_blank'
+    );
   };
 
   const data = toDate(compromisso.dataMarcacao);
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={handleClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 z-40 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-background-tertiary rounded-2xl p-6 shadow-2xl border border-border-primary focus:outline-none">
           <div className="flex items-center justify-between mb-6">
             <Dialog.Title className="text-label-large-size text-content-primary font-bold">
-              Finalizar Atendimento
+              {finalizado ? 'Atendimento Finalizado' : 'Finalizar Atendimento'}
             </Dialog.Title>
             <button
               className="text-content-secondary hover:text-content-primary transition-colors rounded-md p-1 hover:bg-background-secondary"
               aria-label="Fechar"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
             >
               <X className="size-4" />
             </button>
@@ -112,58 +146,101 @@ export function FinalizarAtendimentoDialog({
                 })}
               </span>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="valorCobrado">Valor Cobrado (R$)</Label>
-              <Input
-                id="valorCobrado"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-                placeholder="0.00"
-              />
-              {valorPadrao > 0 && (
-                <p className="mt-1 text-paragraph-small-size text-content-tertiary">
-                  Valor padrão do procedimento:{' '}
+            {finalizado && (
+              <div className="flex items-center justify-between pt-1 border-t border-border-divisor">
+                <span className="text-paragraph-small-size text-content-tertiary">
+                  Valor cobrado
+                </span>
+                <span className="text-paragraph-medium-size text-green-400 font-semibold">
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
-                  }).format(valorPadrao)}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="observacaoAtendimento">
-                Observação (opcional)
-              </Label>
-              <Textarea
-                id="observacaoAtendimento"
-                placeholder="Anotações sobre o atendimento..."
-                rows={3}
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-              />
-            </div>
+                  }).format(valorFinal)}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-3 justify-end pt-5">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={isSaving}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleConfirmar} disabled={isSaving}>
-              <CheckCircle className="size-4" />
-              {isSaving ? 'Salvando...' : 'Confirmar e Gerar Recibo'}
-            </Button>
-          </div>
+          {/* Estado: formulário ou ações pós-finalização */}
+          {finalizado ? (
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handleBaixarRecibo}
+                className="w-full justify-center"
+              >
+                <FileDown className="size-4" />
+                Baixar Recibo (PDF)
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleWhatsApp}
+                className="w-full justify-center"
+              >
+                <MessageCircle className="size-4" />
+                Enviar pelo WhatsApp
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleClose}
+                className="w-full justify-center text-content-tertiary"
+              >
+                Fechar
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="valorCobrado">Valor Cobrado (R$)</Label>
+                  <Input
+                    id="valorCobrado"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={valor}
+                    onChange={(e) => setValor(e.target.value)}
+                    placeholder="0.00"
+                  />
+                  {valorPadrao > 0 && (
+                    <p className="mt-1 text-paragraph-small-size text-content-tertiary">
+                      Valor padrão do procedimento:{' '}
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      }).format(valorPadrao)}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="observacaoAtendimento">
+                    Observação (opcional)
+                  </Label>
+                  <Textarea
+                    id="observacaoAtendimento"
+                    placeholder="Anotações sobre o atendimento..."
+                    rows={3}
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-5">
+                <Button
+                  variant="ghost"
+                  onClick={handleClose}
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleConfirmar} disabled={isSaving}>
+                  <CheckCircle className="size-4" />
+                  {isSaving ? 'Salvando...' : 'Confirmar e Gerar Recibo'}
+                </Button>
+              </div>
+            </>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

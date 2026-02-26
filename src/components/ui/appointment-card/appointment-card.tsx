@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   CheckCheck,
+  FileDown,
 } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
@@ -137,6 +138,17 @@ export function AppointmentCard({ compromisso }: AppointmentCardProps) {
               aria-label="Finalizar atendimento"
             >
               <CheckCheck className="size-3.5" />
+            </button>
+          )}
+          {compromisso.status === 'REALIZADO' && (
+            <button
+              onClick={() =>
+                window.open(`/api/recibo/${compromisso.id}`, '_blank')
+              }
+              className="p-1.5 rounded-md text-content-tertiary hover:text-content-brand hover:bg-background-primary transition-colors"
+              aria-label="Baixar recibo"
+            >
+              <FileDown className="size-3.5" />
             </button>
           )}
           <button
