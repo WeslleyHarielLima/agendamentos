@@ -252,25 +252,26 @@
 
 ---
 
-## Fase 9 — Relatórios
+## ~~Fase 9 — Relatórios~~ ✅ CONCLUÍDA
 
 ### Passo 24 — Actions de relatório
 
-- [ ] `src/actions/relatorios/faturamento-por-periodo.ts` — soma de `valorCobrado` (ou `procedimento.valor` como fallback) agrupada por data
-- [ ] `src/actions/relatorios/ranking-procedimentos.ts` — count e sum agrupados por `procedimentoId`
-- [ ] `src/actions/relatorios/historico-paciente.ts` — findMany com `where: { pacienteId }` incluindo `valorCobrado`
+- [x] `src/actions/relatorios/faturamento-por-periodo.ts` — soma de `valorCobrado` (ou `procedimento.valor` como fallback) agrupada por data; retorna totalGeral, totalAtendimentos e ticketMedio
+- [x] `src/actions/relatorios/ranking-procedimentos.ts` — count e sum agrupados por nome do procedimento, ordenado por mais realizados
+- [x] `src/actions/relatorios/historico-paciente.ts` — findMany com `where: { pacienteId }` incluindo `valorCobrado`
 
 ### Passo 25 — Página de Relatórios
 
-- [ ] `src/app/relatorios/page.tsx` — tabs com 4 seções:
-  1. **Faturamento** — cards de total + gráfico de barras em CSS
-  2. **Procedimentos** — ranking dos mais realizados com receita gerada
-  3. **Histórico por paciente** — select de paciente → lista de atendimentos
-  4. **Exportar** — download CSV via Route Handler
-- [ ] `src/components/ui/relatorios/stat-card.tsx` — card de métrica
-- [ ] `src/components/ui/relatorios/bar-chart.tsx` — gráfico de barras sem lib externa
-- [ ] `src/components/ui/relatorios/period-filter.tsx` — seletor de período
-- [ ] `src/app/api/exportar/route.ts` — Route Handler que gera CSV com `valorCobrado` por compromisso realizado
+- [x] `src/app/relatorios/page.tsx` — tabs com 4 seções via `searchParams` (server-rendered):
+  1. **Faturamento** — 3 StatCards (total, atendimentos, ticket médio) + gráfico de barras CSS por dia
+  2. **Procedimentos** — ranking tabular dos mais realizados com receita gerada
+  3. **Histórico por paciente** — PatientSelect (Client) → tabela de atendimentos com status e valor
+  4. **Exportar** — botão de download CSV
+- [x] `src/components/ui/relatorios/stat-card.tsx` — card de métrica com variante highlight
+- [x] `src/components/ui/relatorios/bar-chart.tsx` — gráfico de barras CSS sem lib externa
+- [x] `src/components/ui/relatorios/period-filter.tsx` — seletor de período (7d/30d/90d/1 ano) — Client Component
+- [x] `src/components/ui/relatorios/patient-select.tsx` — select de paciente com navegação — Client Component
+- [x] `src/app/api/exportar/route.ts` — Route Handler que gera CSV com BOM UTF-8 de todos os atendimentos realizados
 
 ---
 
