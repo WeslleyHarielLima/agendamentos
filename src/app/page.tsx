@@ -1,10 +1,17 @@
 import { PeriodSection } from '@/components/ui/period-section';
 import { AppointmentForm } from '@/components/ui/appointment-form';
 import { listarCompromissos } from '@/actions/listar-compromissos';
+import { listarPacientes } from '@/actions/listar-pacientes';
+import { listarProcedimentos } from '@/actions/listar-procedimentos';
 import { grupoCompromissosporPeriodo } from '@/lib/compromisso-utils';
 
 export default async function Home() {
-  const compromissos = await listarCompromissos();
+  const [compromissos, pacientes, procedimentos] = await Promise.all([
+    listarCompromissos(),
+    listarPacientes(),
+    listarProcedimentos(),
+  ]);
+
   const grupos = grupoCompromissosporPeriodo(compromissos);
 
   return (
@@ -19,7 +26,7 @@ export default async function Home() {
             hoje.
           </p>
         </div>
-        <AppointmentForm />
+        <AppointmentForm pacientes={pacientes} procedimentos={procedimentos} />
       </div>
 
       <div className="md:mx-8">

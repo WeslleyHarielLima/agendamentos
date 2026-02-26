@@ -13,24 +13,50 @@ datasource db {
   provider = "postgresql"
 }
 
-model Compromisso {
-  id           String   @id @default(cuid())
-  pacienteNome String
-  procedimento String
+enum StatusCompromisso {
+  AGENDADO
+  REALIZADO
+  CANCELADO
+}
+
+model Paciente {
+  id           String        @id @default(cuid())
+  nome         String
   telefone     String
-  descricao    String
-  dataMarcacao DateTime
+  email        String?
+  criadoEm    DateTime      @default(now())
+  compromissos Compromisso[]
+
+  @@map("pacientes")
+}
+
+model Compromisso {
+  id             String            @id @default(cuid())
+  pacienteNome   String
+  procedimento   String
+  telefone       String
+  descricao      String
+  dataMarcacao   DateTime
+  status         StatusCompromisso @default(AGENDADO)
+  valorCobrado   Decimal?
+  observacao     String?
+  pacienteId     String?
+  procedimentoId String?
+
+  paciente        Paciente?    @relation(fields: [pacienteId], references: [id])
+  procedimentoRel Procedimento? @relation(fields: [procedimentoId], references: [id])
 
   @@map("compromissos")
 }
 
 model Procedimento {
-  id        String   @id @default(cuid())
-  nome      String
-  valor     Decimal
-  descricao String?
-  ativo     Boolean  @default(true)
-  criadoEm  DateTime @default(now())
+  id           String        @id @default(cuid())
+  nome         String
+  valor        Decimal
+  descricao    String?
+  ativo        Boolean       @default(true)
+  criadoEm    DateTime      @default(now())
+  compromissos Compromisso[]
 
   @@map("procedimentos")
 }

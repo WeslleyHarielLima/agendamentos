@@ -1,3 +1,5 @@
+export type StatusCompromisso = 'AGENDADO' | 'REALIZADO' | 'CANCELADO';
+
 export type Compromisso = {
   id: string;
   pacienteNome: string;
@@ -5,6 +7,12 @@ export type Compromisso = {
   telefone: string;
   descricao: string;
   dataMarcacao: Date;
+  status: StatusCompromisso;
+  valorCobrado: number | null;
+  observacao: string | null;
+  pacienteId: string | null;
+  procedimentoId: string | null;
+  procedimentoRel: { valor: number } | null;
 };
 
 export type PeriodoKey = 'manha' | 'tarde' | 'noite';

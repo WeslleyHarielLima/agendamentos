@@ -109,89 +109,97 @@
 
 ---
 
-## Fase 4 — Layout Global + Navegação
+## ~~Fase 4 — Layout Global + Navegação~~ ✅ CONCLUÍDA
 
 ### Passo 13 — Sidebar de navegação
 
-- [ ] `src/components/ui/sidebar/sidebar.tsx` — componente client com `usePathname`
+- [x] `src/components/ui/sidebar/sidebar.tsx` — componente client com `usePathname`
   - Logo/título do sistema
   - Links: Agenda (`/`), Pacientes (`/pacientes`), Procedimentos (`/procedimentos`), Relatórios (`/relatorios`)
   - Link ativo destacado com cor brand
   - Ícones: Calendar, Users, Stethoscope, BarChart2 (lucide-react)
-- [ ] `src/app/layout.tsx` — layout `flex` com sidebar fixa 240px + `flex-1` para conteúdo
+- [x] `src/app/layout.tsx` — layout `flex` com sidebar fixa 240px + `flex-1` para conteúdo
 
 ---
 
-## Fase 5 — Cadastro de Procedimentos
+## ~~Fase 5 — Cadastro de Procedimentos~~ ✅ CONCLUÍDA
 
 ### Passo 14 — Schema + Actions de Procedimento
 
-- [ ] `prisma/schema.prisma` — novo model `Procedimento` (id, nome, valor: Decimal, descricao, ativo)
-- [ ] `npx prisma db push` + `npx prisma generate`
-- [ ] `src/actions/criar-procedimento.ts`
-- [ ] `src/actions/atualizar-procedimento.ts`
-- [ ] `src/actions/deletar-procedimento.ts` — desativação lógica (`ativo = false`)
-- [ ] `src/actions/listar-procedimentos.ts`
-- [ ] `src/lib/schemas/procedimento-schema.ts` — Zod schema
+- [x] `prisma/schema.prisma` — novo model `Procedimento` (id, nome, valor: Decimal, descricao, ativo)
+- [x] `npx prisma db push` + `npx prisma generate`
+- [x] `src/actions/criar-procedimento.ts`
+- [x] `src/actions/atualizar-procedimento.ts`
+- [x] `src/actions/deletar-procedimento.ts` — desativação lógica (`ativo = false`)
+- [x] `src/actions/listar-procedimentos.ts`
+- [x] `src/lib/schemas/procedimento-schema.ts` — Zod schema
 
 ### Passo 15 — Página de Procedimentos
 
-- [ ] `src/app/procedimentos/page.tsx` — tabela de procedimentos + botão "Novo Procedimento"
-- [ ] `src/components/ui/procedure-form/procedure-form.tsx` — Dialog de criação/edição
+- [x] `src/app/procedimentos/page.tsx` — tabela de procedimentos + botão "Novo Procedimento"
+- [x] `src/components/ui/procedure-form/procedure-form.tsx` — Dialog de criação/edição
   - Campos: nome, valor (R$), descrição opcional
   - Valor formatado em BRL (Intl.NumberFormat)
 
 ---
 
-## Fase 6 — Cadastro de Pacientes + Migração do Schema
+## ~~Fase 6 — Cadastro de Pacientes + Migração do Schema~~ ✅ CONCLUÍDA
 
 ### Passo 16 — Schema completo com relações
 
-- [ ] `prisma/schema.prisma` — atualização completa:
+- [x] `prisma/schema.prisma` — atualização completa:
   - Model `Paciente` (id, nome, telefone, email?, criadoEm)
   - Enum `StatusCompromisso` (AGENDADO, REALIZADO, CANCELADO)
   - `Compromisso` atualizado:
-    - `pacienteId` FK + `procedimentoId` FK
+    - `pacienteId` FK + `procedimentoId` FK (opcionais para backward compat)
     - `status: StatusCompromisso` (default AGENDADO)
-    - `valorCobrado: Decimal?` — valor real cobrado no atendimento (pode diferir do padrão do procedimento)
-- [ ] Script de migração para preservar dados existentes
-- [ ] `npx prisma db push` + `npx prisma generate`
+    - `valorCobrado: Decimal?` — valor real cobrado no atendimento
+    - `observacao: String?` — anotações do atendimento
+- [x] `npx prisma db push` + `npx prisma generate`
 
 ### Passo 17 — CRUD de Pacientes
 
-- [ ] `src/actions/` — criar, atualizar, deletar, listar, buscarPorId para Paciente
-- [ ] `src/lib/schemas/paciente-schema.ts` — Zod schema
-- [ ] `src/app/pacientes/page.tsx` — lista com busca por nome
-- [ ] `src/components/ui/patient-form/patient-form.tsx` — Dialog de criação/edição
-- [ ] `src/app/pacientes/[id]/page.tsx` — histórico completo do paciente
+- [x] `src/actions/criar-paciente.ts` — retorna dados do paciente criado
+- [x] `src/actions/atualizar-paciente.ts`
+- [x] `src/actions/deletar-paciente.ts`
+- [x] `src/actions/listar-pacientes.ts`
+- [x] `src/actions/buscar-paciente.ts` — inclui histórico de compromissos
+- [x] `src/lib/schemas/paciente-schema.ts` — Zod schema
+- [x] `src/app/pacientes/page.tsx` — lista com busca por nome/telefone/e-mail
+- [x] `src/app/pacientes/pacientes-list.tsx` — componente client com filtro
+- [x] `src/components/ui/patient-form/patient-form.tsx` — Dialog de criação/edição
+  - Suporta callback `onCreated` para uso inline no AppointmentForm
+- [x] `src/app/pacientes/[id]/page.tsx` — histórico completo do paciente
 
 ### Passo 18 — Atualizar formulário de agendamento
 
-- [ ] `src/components/ui/combobox/combobox.tsx` — novo componente (Radix Popover + busca)
-- [ ] `appointment-form.tsx` — campo paciente vira Combobox com autocomplete
-  - Opção "Cadastrar novo paciente" inline
-  - Telefone preenchido automaticamente ao selecionar
-- [ ] `appointment-form.tsx` — campo procedimento vira Combobox
+- [x] `src/components/ui/combobox/combobox.tsx` — Radix Popover + busca + footer customizável
+- [x] `appointment-form.tsx` — campo paciente vira Combobox com autocomplete
+  - Opção "Cadastrar novo paciente" inline (abre PatientForm aninhado)
+  - Telefone exibido automaticamente ao selecionar
+  - Lista de pacientes atualizada em tempo real após criação inline
+- [x] `appointment-form.tsx` — campo procedimento vira Combobox
   - Exibe nome + valor (R$) na lista
   - Valor do procedimento exibido ao selecionar
+- [x] `src/app/page.tsx` — passa `pacientes` e `procedimentos` como props ao AppointmentForm
+- [x] `src/actions/criar-compromisso.ts` — atualizado: recebe `pacienteId`/`procedimentoId`, busca dados e persiste FKs
 
 ### Passo 19 — Controle de status no AppointmentCard
 
-- [ ] `AppointmentCard` exibe badge de status (AGENDADO / REALIZADO / CANCELADO) com cores distintas
+- [x] `AppointmentCard` exibe badge de status (AGENDADO / REALIZADO / CANCELADO) com cores distintas
   - Agendado: cinza/neutro
-  - Realizado: verde (`accent-green` — adicionar ao design system se necessário)
-  - Cancelado: vermelho (`destructive`)
-- [ ] Botão "Finalizar" visível no hover quando status = AGENDADO
+  - Realizado: verde (`bg-green-500/15 text-green-400`)
+  - Cancelado: vermelho (`bg-red-500/15 text-destructive`)
+- [x] Botão "Finalizar" (ícone ✓✓) visível no hover quando status = AGENDADO
   - Abre `FinalizarAtendimentoDialog`
-- [ ] `src/components/ui/finalizar-atendimento-dialog/finalizar-atendimento-dialog.tsx`:
-  - Mostra: nome do paciente, procedimento realizado, data
-  - Campo **Valor Cobrado** pré-preenchido com `Procedimento.valor`, mas **editável**
-  - Campo opcional de observação sobre o atendimento
+- [x] `src/components/ui/finalizar-atendimento-dialog/finalizar-atendimento-dialog.tsx`:
+  - Mostra resumo: paciente, procedimento, data
+  - Campo **Valor Cobrado** pré-preenchido com `Procedimento.valor`, editável
+  - Campo opcional de observação
   - Botão "Confirmar e Gerar Recibo" — salva `status = REALIZADO` e `valorCobrado`
-- [ ] `src/actions/finalizar-atendimento.ts`:
-  - Atualiza `status = REALIZADO` e `valorCobrado` no banco
+- [x] `src/actions/finalizar-atendimento.ts`:
+  - Atualiza `status = REALIZADO`, `valorCobrado` e `observacao` no banco
   - `revalidatePath('/')`
-  - Retorna dados completos para geração do recibo
 
 ---
 

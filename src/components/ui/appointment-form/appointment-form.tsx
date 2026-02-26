@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
@@ -9,48 +9,77 @@ import { Plus, X } from 'lucide-react';
 
 import { criarCompromisso } from '@/actions/criar-compromisso';
 import {
-  compromissoFormSchema,
-  type CompromissoFormData,
+  novoAgendamentoFormSchema,
+  type NovoAgendamentoFormData,
 } from '@/lib/schemas/compromisso-schema';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Combobox, type ComboboxItem } from '@/components/ui/combobox';
+import { PatientForm } from '@/components/ui/patient-form';
 
-function formatTelefone(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length > 7) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-  }
-  if (digits.length > 2) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  }
-  if (digits.length > 0) {
-    return `(${digits}`;
-  }
-  return digits;
-}
+type PacienteBasico = {
+  id: string;
+  nome: string;
+  telefone: string;
+  email: string | null;
+};
 
-export function AppointmentForm() {
+type ProcedimentoBasico = {
+  id: string;
+  nome: string;
+  valor: number;
+};
+
+type AppointmentFormProps = {
+  pacientes: PacienteBasico[];
+  procedimentos: ProcedimentoBasico[];
+};
+
+export function AppointmentForm({
+  pacientes: initialPacientes,
+  procedimentos,
+}: AppointmentFormProps) {
   const [open, setOpen] = useState(false);
+  const [pacientes, setPacientes] = useState(initialPacientes);
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
-  } = useForm<CompromissoFormData>({
-    resolver: standardSchemaResolver(compromissoFormSchema),
+  } = useForm<NovoAgendamentoFormData>({
+    resolver: standardSchemaResolver(novoAgendamentoFormSchema),
   });
 
-  const onSubmit = async (formData: CompromissoFormData) => {
+  const pacienteIdSelecionado = watch('pacienteId');
+  const procedimentoIdSelecionado = watch('procedimentoId');
+
+  const pacienteItems: ComboboxItem[] = pacientes.map((p) => ({
+    id: p.id,
+    label: p.nome,
+    sublabel: p.telefone,
+  }));
+
+  const procedimentoItems: ComboboxItem[] = procedimentos.map((p) => ({
+    id: p.id,
+    label: p.nome,
+    sublabel: new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(p.valor),
+  }));
+
+  const onSubmit = async (formData: NovoAgendamentoFormData) => {
     const dataMarcacao = new Date(`${formData.data}T${formData.hora}:00`);
 
     const result = await criarCompromisso({
-      pacienteNome: formData.pacienteNome,
-      procedimento: formData.procedimento,
-      telefone: formData.telefone,
+      pacienteId: formData.pacienteId,
+      procedimentoId: formData.procedimentoId,
       descricao: formData.descricao,
       dataMarcacao,
     });
@@ -64,11 +93,16 @@ export function AppointmentForm() {
     }
   };
 
-  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue('telefone', formatTelefone(e.target.value), {
-      shouldValidate: true,
-    });
+  const handlePatientCreated = (novoPaciente: PacienteBasico) => {
+    setPacientes((prev) =>
+      [...prev, novoPaciente].sort((a, b) => a.nome.localeCompare(b.nome))
+    );
+    setValue('pacienteId', novoPaciente.id, { shouldValidate: true });
   };
+
+  const procedimentoSelecionado = procedimentos.find(
+    (p) => p.id === procedimentoIdSelecionado
+  );
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -100,48 +134,81 @@ export function AppointmentForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Nome do Paciente */}
+            {/* Paciente */}
             <div>
-              <Label htmlFor="pacienteNome">Nome do Paciente</Label>
-              <Input
-                id="pacienteNome"
-                placeholder="Ex: Maria Silva"
-                {...register('pacienteNome')}
+              <Label htmlFor="pacienteId">Paciente</Label>
+              <Controller
+                name="pacienteId"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    items={pacienteItems}
+                    value={field.value ?? ''}
+                    onValueChange={field.onChange}
+                    placeholder="Selecione um paciente..."
+                    searchPlaceholder="Buscar paciente..."
+                    emptyMessage="Nenhum paciente encontrado."
+                    error={!!errors.pacienteId}
+                    footer={
+                      <PatientForm onCreated={handlePatientCreated}>
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-paragraph-small-size text-content-brand hover:bg-background-secondary transition-colors"
+                        >
+                          <Plus className="size-3.5" />
+                          Cadastrar novo paciente
+                        </button>
+                      </PatientForm>
+                    }
+                  />
+                )}
               />
-              {errors.pacienteNome && (
+              {errors.pacienteId && (
                 <p className="mt-1 text-paragraph-small-size text-destructive">
-                  {errors.pacienteNome.message}
+                  {errors.pacienteId.message}
+                </p>
+              )}
+              {pacienteIdSelecionado && (
+                <p className="mt-1 text-paragraph-small-size text-content-tertiary">
+                  Tel:{' '}
+                  {
+                    pacientes.find((p) => p.id === pacienteIdSelecionado)
+                      ?.telefone
+                  }
                 </p>
               )}
             </div>
 
             {/* Procedimento */}
             <div>
-              <Label htmlFor="procedimento">Procedimento</Label>
-              <Input
-                id="procedimento"
-                placeholder="Ex: Extração de terceiro molar"
-                {...register('procedimento')}
+              <Label htmlFor="procedimentoId">Procedimento</Label>
+              <Controller
+                name="procedimentoId"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    items={procedimentoItems}
+                    value={field.value ?? ''}
+                    onValueChange={field.onChange}
+                    placeholder="Selecione um procedimento..."
+                    searchPlaceholder="Buscar procedimento..."
+                    emptyMessage="Nenhum procedimento encontrado."
+                    error={!!errors.procedimentoId}
+                  />
+                )}
               />
-              {errors.procedimento && (
+              {errors.procedimentoId && (
                 <p className="mt-1 text-paragraph-small-size text-destructive">
-                  {errors.procedimento.message}
+                  {errors.procedimentoId.message}
                 </p>
               )}
-            </div>
-
-            {/* Telefone */}
-            <div>
-              <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                placeholder="(00) 00000-0000"
-                {...register('telefone')}
-                onChange={handleTelefoneChange}
-              />
-              {errors.telefone && (
-                <p className="mt-1 text-paragraph-small-size text-destructive">
-                  {errors.telefone.message}
+              {procedimentoSelecionado && (
+                <p className="mt-1 text-paragraph-small-size text-content-tertiary">
+                  Valor:{' '}
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(procedimentoSelecionado.valor)}
                 </p>
               )}
             </div>

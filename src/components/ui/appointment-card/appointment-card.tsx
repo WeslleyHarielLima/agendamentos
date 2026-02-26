@@ -1,13 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Stethoscope, Phone, Clock, Pencil, Trash2 } from 'lucide-react';
+import {
+  User,
+  Stethoscope,
+  Phone,
+  Clock,
+  Pencil,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  CheckCheck,
+} from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
 
 import type { Compromisso } from '@/lib/compromisso-utils';
 import { deletarCompromisso } from '@/actions/deletar-compromisso';
 import { EditAppointmentForm } from '@/components/ui/edit-appointment-form';
+import { FinalizarAtendimentoDialog } from '@/components/ui/finalizar-atendimento-dialog';
 import { Button } from '@/components/ui/button';
 
 type AppointmentCardProps = {
@@ -26,9 +37,35 @@ function formatHora(data: Date | string): string {
   });
 }
 
+function StatusBadge({ status }: { status: Compromisso['status'] }) {
+  if (status === 'REALIZADO') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-paragraph-small-size bg-green-500/15 text-green-400">
+        <CheckCircle className="size-3" />
+        Realizado
+      </span>
+    );
+  }
+  if (status === 'CANCELADO') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-paragraph-small-size bg-red-500/15 text-destructive">
+        <XCircle className="size-3" />
+        Cancelado
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-paragraph-small-size bg-background-primary text-content-tertiary">
+      <Clock className="size-3" />
+      Agendado
+    </span>
+  );
+}
+
 export function AppointmentCard({ compromisso }: AppointmentCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -59,11 +96,12 @@ export function AppointmentCard({ compromisso }: AppointmentCardProps) {
 
         {/* Conteúdo */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <User className="size-3.5 text-content-brand shrink-0" />
             <span className="text-label-medium-size text-content-primary truncate">
               {compromisso.pacienteNome}
             </span>
+            <StatusBadge status={compromisso.status} />
           </div>
 
           <div className="flex items-center gap-2">
@@ -79,10 +117,28 @@ export function AppointmentCard({ compromisso }: AppointmentCardProps) {
               {compromisso.telefone}
             </span>
           </div>
+
+          {compromisso.valorCobrado !== null && (
+            <span className="text-paragraph-small-size text-content-brand">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              }).format(compromisso.valorCobrado)}
+            </span>
+          )}
         </div>
 
         {/* Botões de ação — visíveis ao hover */}
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-center">
+          {compromisso.status === 'AGENDADO' && (
+            <button
+              onClick={() => setFinalizarOpen(true)}
+              className="p-1.5 rounded-md text-content-tertiary hover:text-green-400 hover:bg-background-primary transition-colors"
+              aria-label="Finalizar atendimento"
+            >
+              <CheckCheck className="size-3.5" />
+            </button>
+          )}
           <button
             onClick={() => setEditOpen(true)}
             className="p-1.5 rounded-md text-content-tertiary hover:text-content-primary hover:bg-background-primary transition-colors"
@@ -105,6 +161,13 @@ export function AppointmentCard({ compromisso }: AppointmentCardProps) {
         compromisso={compromisso}
         open={editOpen}
         onOpenChange={setEditOpen}
+      />
+
+      {/* Dialog de finalização */}
+      <FinalizarAtendimentoDialog
+        compromisso={compromisso}
+        open={finalizarOpen}
+        onOpenChange={setFinalizarOpen}
       />
 
       {/* Dialog de confirmação de exclusão */}
