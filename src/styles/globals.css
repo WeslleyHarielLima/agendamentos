@@ -237,11 +237,59 @@
   }
 }
 
+/* ── Light mode — paleta "ametista" ─────────────────────────────────── */
+html.light {
+  /* Texto */
+  --color-content-primary: #16122c;
+  --color-content-secondary: #635e80;
+  --color-content-tertiary: #9993b3;
+  --color-content-brand: #5f47ef;
+
+  /* Superfícies */
+  --color-background-primary: #f8f6ff;
+  --color-background-secondary: #ffffff;
+  --color-background-tertiary: #efe9ff;
+  --color-background-brand: #5f47ef;
+  --color-background-highlights: #c4b9ff;
+
+  /* Bordas */
+  --color-border-primary: #ddd8f0;
+  --color-border-secondary: #c0b8e0;
+  --color-border-brand: #7b6af5;
+  --color-border-divisor: #e8e3fb;
+
+  /* Acentos */
+  --color-accent-primary: #4f35e1;
+  --color-accent-primary-light: #8b7cf8;
+  --color-accent-blue-light: #bdd9ff;
+  --color-accent-yellow-light: #fdf3c0;
+  --color-accent-orange-light: #fde8c0;
+}
+
+html.light body {
+  background-color: var(--color-background-primary);
+  color: var(--color-content-primary);
+}
+
+/* Ajuste de contraste dos badges de status no light mode */
+html.light .text-green-400 {
+  color: #16a34a;
+}
+html.light .text-destructive {
+  color: #b91c1c;
+}
+
 /* Date/Time Input — dark mode icon */
 input[type='date']::-webkit-calendar-picker-indicator,
 input[type='time']::-webkit-calendar-picker-indicator {
   filter: invert(0.7);
   cursor: pointer;
+}
+
+/* Date/Time Input — light mode icon */
+html.light input[type='date']::-webkit-calendar-picker-indicator,
+html.light input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
 }
 
 /* Toast Error Styles */

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { BarChart2, Calendar, Stethoscope, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/theme/theme-toggle';
 
 const navLinks = [
   { href: '/', label: 'Agenda', icon: Calendar },
@@ -51,6 +52,11 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Tema */}
+      <div className="px-3 pb-4 border-t border-border-divisor pt-3">
+        <ThemeToggle />
+      </div>
     </aside>
   );
 }
