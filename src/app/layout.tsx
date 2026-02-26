@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 
+import { Sidebar } from '@/components/ui/sidebar';
+
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
@@ -28,7 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${interTight.variable} antialiased`}>
-        {children}
+        <div className="flex min-h-screen bg-background-primary">
+          <Sidebar />
+          <div className="flex-1 overflow-y-auto">{children}</div>
+        </div>
         <Toaster position="top-right" richColors />
       </body>
     </html>

@@ -23,3 +23,14 @@ model Compromisso {
 
   @@map("compromissos")
 }
+
+model Procedimento {
+  id        String   @id @default(cuid())
+  nome      String
+  valor     Decimal
+  descricao String?
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+
+  @@map("procedimentos")
+}
