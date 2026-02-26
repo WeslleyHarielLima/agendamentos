@@ -150,7 +150,10 @@
 - [ ] `prisma/schema.prisma` — atualização completa:
   - Model `Paciente` (id, nome, telefone, email?, criadoEm)
   - Enum `StatusCompromisso` (AGENDADO, REALIZADO, CANCELADO)
-  - `Compromisso` atualizado: `pacienteId` FK + `procedimentoId` FK + `status`
+  - `Compromisso` atualizado:
+    - `pacienteId` FK + `procedimentoId` FK
+    - `status: StatusCompromisso` (default AGENDADO)
+    - `valorCobrado: Decimal?` — valor real cobrado no atendimento (pode diferir do padrão do procedimento)
 - [ ] Script de migração para preservar dados existentes
 - [ ] `npx prisma db push` + `npx prisma generate`
 
@@ -172,11 +175,55 @@
   - Exibe nome + valor (R$) na lista
   - Valor do procedimento exibido ao selecionar
 
+### Passo 19 — Controle de status no AppointmentCard
+
+- [ ] `AppointmentCard` exibe badge de status (AGENDADO / REALIZADO / CANCELADO) com cores distintas
+  - Agendado: cinza/neutro
+  - Realizado: verde (`accent-green` — adicionar ao design system se necessário)
+  - Cancelado: vermelho (`destructive`)
+- [ ] Botão "Finalizar" visível no hover quando status = AGENDADO
+  - Abre `FinalizarAtendimentoDialog`
+- [ ] `src/components/ui/finalizar-atendimento-dialog/finalizar-atendimento-dialog.tsx`:
+  - Mostra: nome do paciente, procedimento realizado, data
+  - Campo **Valor Cobrado** pré-preenchido com `Procedimento.valor`, mas **editável**
+  - Campo opcional de observação sobre o atendimento
+  - Botão "Confirmar e Gerar Recibo" — salva `status = REALIZADO` e `valorCobrado`
+- [ ] `src/actions/finalizar-atendimento.ts`:
+  - Atualiza `status = REALIZADO` e `valorCobrado` no banco
+  - `revalidatePath('/')`
+  - Retorna dados completos para geração do recibo
+
 ---
 
-## Fase 7 — Calendário Mensal
+## Fase 7 — Recibo PDF
 
-### Passo 19 — Componente de grade do calendário
+### Passo 20 — Geração do recibo em PDF
+
+- [ ] Instalar `@react-pdf/renderer` para geração de PDF no servidor
+- [ ] `src/app/api/recibo/[id]/route.ts` — Route Handler:
+  - Busca compromisso com `include: { paciente, procedimento }`
+  - Gera PDF com `@react-pdf/renderer` e retorna como `application/pdf`
+- [ ] `src/lib/pdf/recibo-template.tsx` — template do recibo (componentes do react-pdf):
+  - Cabeçalho: nome da clínica
+  - Dados do paciente: nome, telefone
+  - Dados do atendimento: procedimento, data, descrição/observação
+  - **Valor Cobrado**: valor registrado em `valorCobrado` (editado ou padrão)
+  - Rodapé: data de emissão
+
+### Passo 21 — UI de download e compartilhamento
+
+- [ ] Após confirmação em `FinalizarAtendimentoDialog`:
+  - Botão **Baixar Recibo** — faz GET em `/api/recibo/[id]` e abre o PDF
+  - Botão **Enviar pelo WhatsApp** — abre `https://wa.me/55{telefone}` com mensagem padrão
+    - Mensagem: _"Olá {nome}! Segue o recibo do atendimento de {procedimento} realizado em {data}."_
+    - Funciona sem API externa — abre o app/web do WhatsApp direto
+- [ ] `AppointmentCard` com status REALIZADO exibe botão de ícone para baixar recibo novamente (`FileDown`)
+
+---
+
+## Fase 8 — Calendário Mensal
+
+### Passo 22 — Componente de grade do calendário
 
 - [ ] `src/components/ui/calendar/calendar.tsx` — grid 7×5:
   - Cabeçalho com mês/ano + setas prev/next (links com `searchParams`)
@@ -184,7 +231,7 @@
   - Dias com agendamentos mostram ponto colorido
   - Dia selecionado destacado com cor brand (`--color-content-brand`)
 
-### Passo 20 — Integração na página principal
+### Passo 23 — Integração na página principal
 
 - [ ] `src/app/page.tsx` — layout split: calendário fixo à esquerda + agenda filtrada à direita
 - [ ] `src/actions/listar-compromissos.ts` — aceitar filtro de data (`where: { dataMarcacao: { gte, lte } }`)
@@ -194,15 +241,15 @@
 
 ---
 
-## Fase 8 — Relatórios
+## Fase 9 — Relatórios
 
-### Passo 21 — Actions de relatório
+### Passo 24 — Actions de relatório
 
-- [ ] `src/actions/relatorios/faturamento-por-periodo.ts` — soma de `procedimento.valor` agrupada por data
+- [ ] `src/actions/relatorios/faturamento-por-periodo.ts` — soma de `valorCobrado` (ou `procedimento.valor` como fallback) agrupada por data
 - [ ] `src/actions/relatorios/ranking-procedimentos.ts` — count e sum agrupados por `procedimentoId`
-- [ ] `src/actions/relatorios/historico-paciente.ts` — findMany com `where: { pacienteId }`
+- [ ] `src/actions/relatorios/historico-paciente.ts` — findMany com `where: { pacienteId }` incluindo `valorCobrado`
 
-### Passo 22 — Página de Relatórios
+### Passo 25 — Página de Relatórios
 
 - [ ] `src/app/relatorios/page.tsx` — tabs com 4 seções:
   1. **Faturamento** — cards de total + gráfico de barras em CSS
@@ -212,16 +259,18 @@
 - [ ] `src/components/ui/relatorios/stat-card.tsx` — card de métrica
 - [ ] `src/components/ui/relatorios/bar-chart.tsx` — gráfico de barras sem lib externa
 - [ ] `src/components/ui/relatorios/period-filter.tsx` — seletor de período
-- [ ] `src/app/api/exportar/route.ts` — Route Handler que gera e serve CSV
+- [ ] `src/app/api/exportar/route.ts` — Route Handler que gera CSV com `valorCobrado` por compromisso realizado
 
 ---
 
 ## Ordem de Execução
 
 ```
-Fase 4 (Nav) → Fase 5 (Procedimentos) → Fase 6 (Pacientes + Migração)
-    → Fase 7 (Calendário) → Fase 8 (Relatórios)
+Fase 4 (Nav) → Fase 5 (Procedimentos) → Fase 6 (Pacientes + Migração + Status)
+    → Fase 7 (Recibo PDF) → Fase 8 (Calendário) → Fase 9 (Relatórios)
 ```
 
-A Fase 6 depende da 5 (o form de agendamento precisa de procedimentos cadastrados para o combobox).
-Cada fase entrega valor funcional independente — a Fase 4 já organiza a navegação do sistema.
+- Fase 6 depende da 5 (combobox de procedimentos no form de agendamento)
+- Fase 7 depende da 6 (`valorCobrado`, `status`, dados do paciente para o PDF)
+- Fase 9 usa `valorCobrado` da Fase 6 — relatórios de faturamento refletem o valor real cobrado
+- Cada fase entrega valor funcional independente
