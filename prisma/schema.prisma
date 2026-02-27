@@ -13,6 +13,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  ADMIN
+  USUARIO
+}
+
 enum StatusCompromisso {
   AGENDADO
   REALIZADO
@@ -64,6 +69,32 @@ model Compromisso {
   procedimentoRel Procedimento? @relation(fields: [procedimentoId], references: [id])
 
   @@map("compromissos")
+}
+
+model Usuario {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  senhaHash    String
+  role         Role       @default(USUARIO)
+  ativo        Boolean    @default(true)
+  tentativas   Int        @default(0)
+  bloqueadoAte DateTime?
+  criadoEm    DateTime   @default(now())
+  sessions     Session[]
+
+  @@map("usuarios")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  usuarioId String
+  token     String   @unique
+  ip        String?
+  expiresAt DateTime
+  criadoEm DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@map("sessions")
 }
 
 model Procedimento {
