@@ -1,14 +1,27 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth/session';
 import { verificarSenha } from '@/lib/auth/password';
 import { loginSchema } from '@/lib/schemas/auth-schema';
+import { checkLoginRateLimit } from '@/lib/rateLimit';
 
 export async function login(
   formData: unknown
 ): Promise<{ error: string } | void> {
+  const headersList = await headers();
+  const ip =
+    headersList.get('x-forwarded-for') ??
+    headersList.get('x-real-ip') ??
+    'unknown';
+  try {
+    await checkLoginRateLimit(ip);
+  } catch {
+    return { error: 'Muitas tentativas. Tente novamente em 15 minutos.' };
+  }
+
   const parsed = loginSchema.safeParse(formData);
   if (!parsed.success) {
     return { error: 'Dados inválidos' };

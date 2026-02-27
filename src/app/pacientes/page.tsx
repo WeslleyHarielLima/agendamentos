@@ -9,7 +9,7 @@ export default async function PacientesPage() {
 
   return (
     <div className="bg-background-primary p-6">
-      <div className="flex items-center justify-between md:m-8 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
         <div>
           <h1 className="text-title-size text-content-primary mb-2">
             Pacientes

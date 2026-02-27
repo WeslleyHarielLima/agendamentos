@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { login } from '@/actions/login';
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -24,12 +26,16 @@ export function LoginForm() {
     });
   }
 
+  const inputClass =
+    'w-full rounded-lg border border-border-primary bg-background-primary px-3 py-2.5 text-paragraph-medium text-content-primary placeholder:text-content-tertiary transition-colors focus:border-border-brand focus:outline-none disabled:opacity-50';
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {/* Email */}
+      <div className="flex flex-col gap-1.5">
         <label
           htmlFor="email"
-          className="text-paragraph-medium-size text-content-secondary"
+          className="text-label-small text-content-secondary"
         >
           Email
         </label>
@@ -40,42 +46,67 @@ export function LoginForm() {
           required
           autoComplete="email"
           disabled={isPending}
-          className="rounded-md border border-border-default bg-background-secondary px-3 py-2 text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+          className={inputClass}
           placeholder="seu@email.com"
         />
       </div>
 
-      <div className="flex flex-col gap-1">
+      {/* Senha */}
+      <div className="flex flex-col gap-1.5">
         <label
           htmlFor="senha"
-          className="text-paragraph-medium-size text-content-secondary"
+          className="text-label-small text-content-secondary"
         >
           Senha
         </label>
-        <input
-          id="senha"
-          name="senha"
-          type="password"
-          required
-          autoComplete="current-password"
-          disabled={isPending}
-          className="rounded-md border border-border-default bg-background-secondary px-3 py-2 text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
-          placeholder="••••••••"
-        />
+        <div className="relative">
+          <input
+            id="senha"
+            name="senha"
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="current-password"
+            disabled={isPending}
+            className={`${inputClass} pr-10`}
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-content-tertiary transition-colors hover:text-content-secondary"
+            aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+          >
+            {showPassword ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
 
+      {/* Erro */}
       {error && (
-        <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-500">
-          {error}
-        </p>
+        <div className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2.5">
+          <p className="text-paragraph-small text-red-400">{error}</p>
+        </div>
       )}
 
+      {/* Botão */}
       <button
         type="submit"
         disabled={isPending}
-        className="mt-2 rounded-md bg-accent px-4 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="mt-1 flex items-center justify-center gap-2 rounded-lg bg-background-brand px-4 py-2.5 text-label-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? 'Entrando…' : 'Entrar'}
+        {isPending ? (
+          'Entrando…'
+        ) : (
+          <>
+            <LogIn className="size-4" />
+            Entrar
+          </>
+        )}
       </button>
     </form>
   );

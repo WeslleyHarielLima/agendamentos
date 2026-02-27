@@ -1,288 +1,686 @@
-# Roteiro de Desenvolvimento — Sistema de Agendamentos Clínicos
+# Segurança e Maturidade — Agendamentos
 
-## Estado Atual (já feito)
-
-- [x] Design system completo (`globals.css`) — paleta dark, tipografia, tokens de cor
-- [x] Schema Prisma — model `Compromisso` (id, pacienteNome, procedimento, telefone, descricao, dataMarcacao)
-- [x] Layout raiz com Inter + Inter Tight (`layout.tsx`)
-- [x] Componente `Button` com variantes (CVA + Radix Slot)
-- [x] Componente `PeriodSection` — estrutura com ícones Manhã/Tarde/Noite
-- [x] Página principal (`page.tsx`) — cabeçalho "Sua Agenda" + dados mock
+Stack: Next.js 16, Prisma 7, PostgreSQL, Zod 4, React Hook Form
+Auditoria feita em: 2026-02-26
 
 ---
 
-## ~~Fase 1 — Formulário de Agendamento (Criação)~~ ✅ CONCLUÍDA
+## Estado atual (auditado)
 
-### Passo 1 — Configurar banco de dados
-
-- [x] `DATABASE_URL` já configurada no `.env`
-- [x] `npx prisma generate` — client gerado em `src/generated/prisma`
-- [x] `npx prisma db push` — schema sincronizado com PostgreSQL
-
-### Passo 2 — Schema de validação do formulário
-
-- [x] `zod` v4 instalado via pnpm
-- [x] `src/lib/schemas/compromisso-schema.ts` criado
-  - `compromissoFormSchema` — validação dos campos do form (com `data` e `hora` separados)
-  - `compromissoSchema` — validação da Server Action (com `dataMarcacao: Date`)
-
-### Passo 3 — Primeiros inputs do formulário
-
-- [x] Componente `AppointmentForm` criado em `src/components/ui/appointment-form/`
-- [x] Componente `Input` criado em `src/components/ui/input/`
-- [x] Componente `Label` criado em `src/components/ui/label/`
-- [x] Componente `Textarea` criado em `src/components/ui/textarea/`
-
-### Passo 4 — Input de Telefone
-
-- [x] Máscara manual `(XX) XXXXX-XXXX` via `formatTelefone()` no `onChange`
-- [x] Sem lib extra — implementação nativa com `setValue` do react-hook-form
-
-### Passo 5 — Input de Calendário / Select de Data (Parte 1 e 2)
-
-- [x] Input nativo `type="date"` e `type="time"` estilizados com o design system
-- [x] Ícone do picker adaptado para dark mode via CSS (`filter: invert`)
-- [x] `data` + `hora` combinados em `dataMarcacao: Date` no submit
-
-### Passo 6 — Finalizar visual do formulário
-
-- [x] Tokens do design system aplicados em todos os campos
-- [x] Estado `isSubmitting` desabilita botão e exibe "Salvando..."
-- [x] Mensagens de erro inline por campo via Zod + react-hook-form
-- [x] Dialog com overlay blur, botão de fechar e reset ao cancelar
-
-### Passo 7 — Função de Submit + Server Action (Criação)
-
-- [x] `react-hook-form` v7 + `@hookform/resolvers` v5 instalados
-- [x] `src/actions/criar-compromisso.ts` criado com `'use server'`
-  - Validação dupla com Zod
-  - Persistência via Prisma
-  - Retorno `{ success, error }`
-- [x] Form conectado via `handleSubmit` → Server Action
-- [x] `revalidatePath('/')` chamado após criação
-- [x] Toast de sucesso/erro via Sonner (Toaster no layout raiz)
-- [x] `src/lib/prisma.ts` — singleton do PrismaClient
+| Item                  | Estado                         |
+| --------------------- | ------------------------------ |
+| Modelos CRUD          | ✅ completo                    |
+| Schemas Zod           | ⚠️ parcial                     |
+| Server Actions        | ⚠️ sem auth                    |
+| Autenticação          | ❌ ausente                     |
+| Autorização (RBAC)    | ❌ ausente                     |
+| Rate limiting         | ❌ ausente                     |
+| HTTP security headers | ❌ ausente                     |
+| Auditoria             | ❌ ausente                     |
+| Separação de camadas  | ⚠️ parcial                     |
+| PostgreSQL seguro     | ❌ credenciais padrão, sem SSL |
 
 ---
 
-## ~~Fase 2 — Listagem de Agendamentos~~ ✅ CONCLUÍDA
+## Fase 1 — Autenticação (CRÍTICA — fazer primeiro)
 
-### Passo 8 — Buscar compromissos do banco
+### 1.1 Modelo no schema Prisma
 
-- [x] `src/actions/listar-compromissos.ts` — `findMany` ordenado por `dataMarcacao asc`
+Adicionar em `prisma/schema.prisma`:
 
-### Passo 9 — Agrupar por período do dia
+```prisma
+enum Role {
+  ADMIN
+  USUARIO
+}
 
-- [x] `src/lib/compromisso-utils.ts` — tipos `Compromisso`, `PeriodoKey`, `GruposPorPeriodo`
-- [x] `grupoCompromissosporPeriodo()` — Manhã 06–11h / Tarde 12–17h / Noite 18–05h
-- [x] `page.tsx` convertido para `async` — busca real no banco + agrupamento
+model Usuario {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  senhaHash    String
+  role         Role       @default(USUARIO)
+  ativo        Boolean    @default(true)
+  tentativas   Int        @default(0)
+  bloqueadoAte DateTime?
+  criadoEm    DateTime   @default(now())
+  sessions     Session[]
 
-### Passo 10 — Renderizar PeriodSection com dados reais
+  @@map("usuarios")
+}
 
-- [x] `PeriodSection` reescrito com props tipadas (`type`, `compromissos`)
-- [x] Estado vazio com mensagem "Nenhum agendamento neste período."
-- [x] Contador de agendamentos no header do período
-- [x] `AppointmentCard` criado em `src/components/ui/appointment-card/`
-  - Horário, nome do paciente, procedimento e telefone
-  - Ícones: Clock, User, Stethoscope, Phone (lucide-react)
+model Session {
+  id        String   @id @default(cuid())
+  usuarioId String
+  token     String   @unique
+  ip        String?
+  expiresAt DateTime
+  criadoEm DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
 
----
-
-## ~~Fase 3 — Edição e Exclusão~~ ✅ CONCLUÍDA
-
-### Passo 11 — Editar Agendamento
-
-- [x] Dialog de edição com formulário pré-populado (`src/components/ui/edit-appointment-form/`)
-- [x] Busca dados do compromisso existente via props
-- [x] `src/actions/atualizar-compromisso.ts`
-  - Validação com Zod
-  - `update` no banco via Prisma
-  - `revalidatePath('/')`
-
-### Passo 12 — Excluir Agendamento
-
-- [x] Botões de editar (lápis) e excluir (lixeira) no `AppointmentCard` — visíveis ao hover
-- [x] `src/actions/deletar-compromisso.ts`
-  - Dialog de confirmação com nome do paciente
-  - `delete` no banco via Prisma
-  - `revalidatePath('/')`
-
----
-
-## ~~Fase 4 — Layout Global + Navegação~~ ✅ CONCLUÍDA
-
-### Passo 13 — Sidebar de navegação
-
-- [x] `src/components/ui/sidebar/sidebar.tsx` — componente client com `usePathname`
-  - Logo/título do sistema
-  - Links: Agenda (`/`), Pacientes (`/pacientes`), Procedimentos (`/procedimentos`), Relatórios (`/relatorios`)
-  - Link ativo destacado com cor brand
-  - Ícones: Calendar, Users, Stethoscope, BarChart2 (lucide-react)
-- [x] `src/app/layout.tsx` — layout `flex` com sidebar fixa 240px + `flex-1` para conteúdo
-
----
-
-## ~~Fase 5 — Cadastro de Procedimentos~~ ✅ CONCLUÍDA
-
-### Passo 14 — Schema + Actions de Procedimento
-
-- [x] `prisma/schema.prisma` — novo model `Procedimento` (id, nome, valor: Decimal, descricao, ativo)
-- [x] `npx prisma db push` + `npx prisma generate`
-- [x] `src/actions/criar-procedimento.ts`
-- [x] `src/actions/atualizar-procedimento.ts`
-- [x] `src/actions/deletar-procedimento.ts` — desativação lógica (`ativo = false`)
-- [x] `src/actions/listar-procedimentos.ts`
-- [x] `src/lib/schemas/procedimento-schema.ts` — Zod schema
-
-### Passo 15 — Página de Procedimentos
-
-- [x] `src/app/procedimentos/page.tsx` — tabela de procedimentos + botão "Novo Procedimento"
-- [x] `src/components/ui/procedure-form/procedure-form.tsx` — Dialog de criação/edição
-  - Campos: nome, valor (R$), descrição opcional
-  - Valor formatado em BRL (Intl.NumberFormat)
-
----
-
-## ~~Fase 6 — Cadastro de Pacientes + Migração do Schema~~ ✅ CONCLUÍDA
-
-### Passo 16 — Schema completo com relações
-
-- [x] `prisma/schema.prisma` — atualização completa:
-  - Model `Paciente` (id, nome, telefone, email?, criadoEm)
-  - Enum `StatusCompromisso` (AGENDADO, REALIZADO, CANCELADO)
-  - `Compromisso` atualizado:
-    - `pacienteId` FK + `procedimentoId` FK (opcionais para backward compat)
-    - `status: StatusCompromisso` (default AGENDADO)
-    - `valorCobrado: Decimal?` — valor real cobrado no atendimento
-    - `observacao: String?` — anotações do atendimento
-- [x] `npx prisma db push` + `npx prisma generate`
-
-### Passo 17 — CRUD de Pacientes
-
-- [x] `src/actions/criar-paciente.ts` — retorna dados do paciente criado
-- [x] `src/actions/atualizar-paciente.ts`
-- [x] `src/actions/deletar-paciente.ts`
-- [x] `src/actions/listar-pacientes.ts`
-- [x] `src/actions/buscar-paciente.ts` — inclui histórico de compromissos
-- [x] `src/lib/schemas/paciente-schema.ts` — Zod schema
-- [x] `src/app/pacientes/page.tsx` — lista com busca por nome/telefone/e-mail
-- [x] `src/app/pacientes/pacientes-list.tsx` — componente client com filtro
-- [x] `src/components/ui/patient-form/patient-form.tsx` — Dialog de criação/edição
-  - Suporta callback `onCreated` para uso inline no AppointmentForm
-- [x] `src/app/pacientes/[id]/page.tsx` — histórico completo do paciente
-
-### Passo 18 — Atualizar formulário de agendamento
-
-- [x] `src/components/ui/combobox/combobox.tsx` — Radix Popover + busca + footer customizável
-- [x] `appointment-form.tsx` — campo paciente vira Combobox com autocomplete
-  - Opção "Cadastrar novo paciente" inline (abre PatientForm aninhado)
-  - Telefone exibido automaticamente ao selecionar
-  - Lista de pacientes atualizada em tempo real após criação inline
-- [x] `appointment-form.tsx` — campo procedimento vira Combobox
-  - Exibe nome + valor (R$) na lista
-  - Valor do procedimento exibido ao selecionar
-- [x] `src/app/page.tsx` — passa `pacientes` e `procedimentos` como props ao AppointmentForm
-- [x] `src/actions/criar-compromisso.ts` — atualizado: recebe `pacienteId`/`procedimentoId`, busca dados e persiste FKs
-
-### Passo 19 — Controle de status no AppointmentCard
-
-- [x] `AppointmentCard` exibe badge de status (AGENDADO / REALIZADO / CANCELADO) com cores distintas
-  - Agendado: cinza/neutro
-  - Realizado: verde (`bg-green-500/15 text-green-400`)
-  - Cancelado: vermelho (`bg-red-500/15 text-destructive`)
-- [x] Botão "Finalizar" (ícone ✓✓) visível no hover quando status = AGENDADO
-  - Abre `FinalizarAtendimentoDialog`
-- [x] `src/components/ui/finalizar-atendimento-dialog/finalizar-atendimento-dialog.tsx`:
-  - Mostra resumo: paciente, procedimento, data
-  - Campo **Valor Cobrado** pré-preenchido com `Procedimento.valor`, editável
-  - Campo opcional de observação
-  - Botão "Confirmar e Gerar Recibo" — salva `status = REALIZADO` e `valorCobrado`
-- [x] `src/actions/finalizar-atendimento.ts`:
-  - Atualiza `status = REALIZADO`, `valorCobrado` e `observacao` no banco
-  - `revalidatePath('/')`
-
----
-
-## ~~Fase 7 — Recibo PDF~~ ✅ CONCLUÍDA
-
-### Passo 20 — Geração do recibo em PDF
-
-- [x] `@react-pdf/renderer` v4 instalado via npm
-- [x] `next.config.ts` — `@react-pdf/renderer` adicionado a `serverExternalPackages`
-- [x] `src/app/api/recibo/[id]/route.ts` — Route Handler:
-  - Busca compromisso com `include: { paciente, procedimentoRel }`
-  - Gera PDF com `@react-pdf/renderer` e retorna como `application/pdf`
-- [x] `src/lib/pdf/recibo-template.tsx` — template do recibo (componentes do react-pdf):
-  - Cabeçalho: nome da clínica + subtítulo "Recibo de Atendimento"
-  - Dados do paciente: nome, telefone, e-mail (se houver)
-  - Dados do atendimento: procedimento, data, observação
-  - **Valor Cobrado**: destaque verde com `valorCobrado`
-  - Rodapé: data de emissão + código do compromisso
-
-### Passo 21 — UI de download e compartilhamento
-
-- [x] `FinalizarAtendimentoDialog` — após confirmação exibe tela de ações:
-  - Botão **Baixar Recibo** — `window.open('/api/recibo/[id]', '_blank')`
-  - Botão **Enviar pelo WhatsApp** — abre `https://wa.me/55{telefone}?text=...`
-    - Mensagem: _"Olá {nome}! Segue o recibo do atendimento de {procedimento} realizado em {data}."_
-    - Funciona sem API externa — abre o app/web do WhatsApp direto
-  - Botão **Fechar** — fecha o dialog e reseta o estado
-- [x] `AppointmentCard` com status REALIZADO exibe botão `FileDown` no hover para baixar recibo
-
----
-
-## ~~Fase 8 — Calendário Mensal~~ ✅ CONCLUÍDA
-
-### Passo 22 — Componente de grade do calendário
-
-- [x] `src/components/ui/calendar/calendar.tsx` — grid 7×N (linhas dinâmicas):
-  - Cabeçalho com mês/ano + setas prev/next (links com `searchParams`)
-  - Dia atual destacado com anel brand
-  - Dias com agendamentos mostram ponto colorido
-  - Dia selecionado destacado com cor brand (`--color-content-brand`)
-
-### Passo 23 — Integração na página principal
-
-- [x] `src/app/page.tsx` — layout split: calendário fixo à esquerda + agenda filtrada à direita
-- [x] `src/actions/listar-compromissos.ts` — aceita filtro de data (`where: { dataMarcacao: { gte, lte } }`)
-- [x] `src/actions/listar-dias-com-agendamentos.ts` — retorna dias do mês com agendamentos
-- [x] Filtro por dia e mês via `searchParams` (server-side):
-  - `/?data=2026-02-25` — filtra agendamentos do dia
-  - `/?mes=2026-02` — navega o calendário para o mês
-
----
-
-## ~~Fase 9 — Relatórios~~ ✅ CONCLUÍDA
-
-### Passo 24 — Actions de relatório
-
-- [x] `src/actions/relatorios/faturamento-por-periodo.ts` — soma de `valorCobrado` (ou `procedimento.valor` como fallback) agrupada por data; retorna totalGeral, totalAtendimentos e ticketMedio
-- [x] `src/actions/relatorios/ranking-procedimentos.ts` — count e sum agrupados por nome do procedimento, ordenado por mais realizados
-- [x] `src/actions/relatorios/historico-paciente.ts` — findMany com `where: { pacienteId }` incluindo `valorCobrado`
-
-### Passo 25 — Página de Relatórios
-
-- [x] `src/app/relatorios/page.tsx` — tabs com 4 seções via `searchParams` (server-rendered):
-  1. **Faturamento** — 3 StatCards (total, atendimentos, ticket médio) + gráfico de barras CSS por dia
-  2. **Procedimentos** — ranking tabular dos mais realizados com receita gerada
-  3. **Histórico por paciente** — PatientSelect (Client) → tabela de atendimentos com status e valor
-  4. **Exportar** — botão de download CSV
-- [x] `src/components/ui/relatorios/stat-card.tsx` — card de métrica com variante highlight
-- [x] `src/components/ui/relatorios/bar-chart.tsx` — gráfico de barras CSS sem lib externa
-- [x] `src/components/ui/relatorios/period-filter.tsx` — seletor de período (7d/30d/90d/1 ano) — Client Component
-- [x] `src/components/ui/relatorios/patient-select.tsx` — select de paciente com navegação — Client Component
-- [x] `src/app/api/exportar/route.ts` — Route Handler que gera CSV com BOM UTF-8 de todos os atendimentos realizados
-
----
-
-## Ordem de Execução
-
-```
-Fase 4 (Nav) → Fase 5 (Procedimentos) → Fase 6 (Pacientes + Migração + Status)
-    → Fase 7 (Recibo PDF) → Fase 8 (Calendário) → Fase 9 (Relatórios)
+  @@map("sessions")
+}
 ```
 
-- Fase 6 depende da 5 (combobox de procedimentos no form de agendamento)
-- Fase 7 depende da 6 (`valorCobrado`, `status`, dados do paciente para o PDF)
-- Fase 9 usa `valorCobrado` da Fase 6 — relatórios de faturamento refletem o valor real cobrado
-- Cada fase entrega valor funcional independente
+Rodar: `pnpm prisma migrate dev --name add-autenticacao`
+
+### 1.2 Dependência de hashing
+
+```bash
+pnpm add argon2
+```
+
+Criar `src/lib/auth/password.ts`:
+
+```ts
+import argon2 from 'argon2';
+
+export async function hashSenha(plain: string): Promise<string> {
+  return argon2.hash(plain, { type: argon2.argon2id });
+}
+
+export async function verificarSenha(
+  plain: string,
+  hash: string
+): Promise<boolean> {
+  return argon2.verify(hash, plain);
+}
+```
+
+### 1.3 Schema de senha com política mínima
+
+Criar `src/lib/schemas/auth-schema.ts`:
+
+```ts
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  email: z.string().email('Email inválido'),
+  senha: z.string().min(1, 'Senha obrigatória'),
+});
+
+export const senhaSchema = z
+  .string()
+  .min(8, 'Mínimo 8 caracteres')
+  .regex(/[A-Z]/, 'Precisa de ao menos uma letra maiúscula')
+  .regex(/[0-9]/, 'Precisa de ao menos um número');
+```
+
+### 1.4 Sessão em cookie httpOnly
+
+```bash
+pnpm add iron-session
+```
+
+Criar `src/lib/auth/session.ts`:
+
+```ts
+import { getIronSession } from 'iron-session';
+import { cookies } from 'next/headers';
+
+export interface SessionData {
+  usuarioId: string;
+  role: string;
+}
+
+const sessionOptions = {
+  password: process.env.SESSION_SECRET!, // min 32 chars
+  cookieName: 'agendamentos_session',
+  cookieOptions: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    maxAge: 60 * 60 * 8, // 8 horas
+  },
+};
+
+export async function getSession() {
+  return getIronSession<SessionData>(await cookies(), sessionOptions);
+}
+```
+
+Adicionar ao `.env`:
+
+```
+SESSION_SECRET="gere_uma_string_de_32_caracteres_aqui"
+```
+
+### 1.5 Bloqueio por tentativas falhas
+
+Na action de login:
+
+```ts
+// 1. Buscar usuário
+const usuario = await prisma.usuario.findUnique({ where: { email } });
+if (!usuario) return { error: 'Credenciais inválidas' };
+
+// 2. Verificar bloqueio
+if (usuario.bloqueadoAte && usuario.bloqueadoAte > new Date()) {
+  return { error: 'Conta bloqueada temporariamente' };
+}
+
+// 3. Verificar senha
+const valido = await verificarSenha(senha, usuario.senhaHash);
+if (!valido) {
+  const tentativas = usuario.tentativas + 1;
+  const bloqueadoAte =
+    tentativas >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+  await prisma.usuario.update({
+    where: { id: usuario.id },
+    data: { tentativas, bloqueadoAte },
+  });
+  return { error: 'Credenciais inválidas' };
+}
+
+// 4. Login bem-sucedido: zerar tentativas
+await prisma.usuario.update({
+  where: { id: usuario.id },
+  data: { tentativas: 0, bloqueadoAte: null },
+});
+```
+
+### 1.6 Logout real (revogar sessão no banco)
+
+```ts
+// src/actions/logout.ts
+export async function logout() {
+  const session = await getSession();
+  if (session.usuarioId) {
+    await prisma.session.deleteMany({
+      where: { usuarioId: session.usuarioId },
+    });
+  }
+  session.destroy();
+  redirect('/login');
+}
+```
+
+---
+
+## Fase 2 — Autorização RBAC (CRÍTICA)
+
+### 2.1 Função central de autorização
+
+Criar `src/lib/auth/authorize.ts`:
+
+```ts
+import { SessionData } from './session';
+
+type Acao = 'create' | 'read' | 'update' | 'delete';
+type Recurso =
+  | 'compromisso'
+  | 'paciente'
+  | 'procedimento'
+  | 'relatorio'
+  | 'usuario';
+
+const permissoes: Record<string, Record<Recurso, Acao[]>> = {
+  USUARIO: {
+    compromisso: ['create', 'read', 'update'],
+    paciente: ['create', 'read', 'update'],
+    procedimento: ['read'],
+    relatorio: ['read'],
+    usuario: [],
+  },
+  ADMIN: {
+    compromisso: ['create', 'read', 'update', 'delete'],
+    paciente: ['create', 'read', 'update', 'delete'],
+    procedimento: ['create', 'read', 'update', 'delete'],
+    relatorio: ['read'],
+    usuario: ['create', 'read', 'update', 'delete'],
+  },
+};
+
+export function authorize(
+  session: SessionData,
+  acao: Acao,
+  recurso: Recurso
+): void {
+  const acoes = permissoes[session.role]?.[recurso] ?? [];
+  if (!acoes.includes(acao)) {
+    throw new Error(`Sem permissão para ${acao} em ${recurso}`);
+  }
+}
+```
+
+### 2.2 Helper para pegar sessão autenticada
+
+Criar `src/lib/auth/requireAuth.ts`:
+
+```ts
+import { getSession } from './session';
+import { redirect } from 'next/navigation';
+
+export async function requireAuth() {
+  const session = await getSession();
+  if (!session.usuarioId) {
+    redirect('/login');
+  }
+  return session;
+}
+```
+
+### 2.3 Aplicar em todas as Server Actions
+
+Padrão a seguir em TODA action:
+
+```ts
+export async function criarPaciente(formData: unknown) {
+  // 1. auth
+  const session = await requireAuth();
+  // 2. authz
+  authorize(session, 'create', 'paciente');
+  // 3. validação
+  const parsed = pacienteSchema.parse(formData);
+  // 4. banco
+  return await prisma.paciente.create({ data: parsed });
+}
+```
+
+Aplicar em: `criar-paciente.ts`, `atualizar-paciente.ts`, `deletar-paciente.ts`,
+`criar-compromisso.ts`, `atualizar-compromisso.ts`, `deletar-compromisso.ts`,
+`criar-procedimento.ts`, `atualizar-procedimento.ts`, `deletar-procedimento.ts`
+
+### 2.4 Middleware de rota
+
+Criar `src/middleware.ts` na raiz:
+
+```ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getIronSession } from 'iron-session';
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith('/login') || pathname.startsWith('/_next')) {
+    return NextResponse.next();
+  }
+  // verificar sessão
+  // redirecionar para /login se não autenticado
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};
+```
+
+---
+
+## Fase 3 — Rate Limiting (ALTA)
+
+**Por que antes dos headers:** brute force é o vetor mais imediato agora que haverá login.
+
+### 3.1 Instalar
+
+```bash
+pnpm add rate-limiter-flexible
+```
+
+Para produção com Redis:
+
+```bash
+pnpm add ioredis
+```
+
+### 3.2 Criar `src/lib/rateLimit.ts`
+
+```ts
+import { RateLimiterMemory } from 'rate-limiter-flexible';
+
+const loginLimiter = new RateLimiterMemory({
+  points: 5, // tentativas
+  duration: 900, // por 15 minutos
+});
+
+export async function checkLoginRateLimit(ip: string): Promise<void> {
+  try {
+    await loginLimiter.consume(ip);
+  } catch {
+    throw new Error('Muitas tentativas. Tente novamente em 15 minutos.');
+  }
+}
+```
+
+### 3.3 Aplicar no endpoint de login
+
+```ts
+// antes de qualquer lógica:
+const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
+await checkLoginRateLimit(ip);
+```
+
+---
+
+## Fase 4 — HTTP Security Headers (ALTA)
+
+**1 hora de trabalho, alto impacto.**
+
+### 4.1 Atualizar `next.config.ts`
+
+```ts
+import type { NextConfig } from 'next';
+
+const securityHeaders = [
+  { key: 'X-DNS-Prefetch-Control', value: 'on' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=()',
+  },
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self'",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+    ].join('; '),
+  },
+];
+
+const nextConfig: NextConfig = {
+  serverExternalPackages: ['@prisma/client', '@react-pdf/renderer'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ];
+  },
+};
+
+export default nextConfig;
+```
+
+---
+
+## Fase 5 — Validação Zod (fortalecer o que existe)
+
+**Zod 4 já está instalado e schemas existem. Ajustes pontuais.**
+
+### 5.1 Problema atual nos schemas
+
+Os schemas existentes (`paciente-schema.ts`, `compromisso-schema.ts`, `procedimento-schema.ts`)
+não rejeitam campos extras. No Zod 4, `.strip()` é o padrão, mas é preciso garantir.
+
+Verificar se algum schema usa `.passthrough()` e remover.
+
+### 5.2 Selects explícitos no Prisma
+
+Criar `src/lib/types.ts` com tipos de retorno seguros:
+
+```ts
+// nunca retornar senhaHash, tentativas, bloqueadoAte
+export type UsuarioPublico = {
+  id: string;
+  email: string;
+  role: string;
+};
+```
+
+Em todas as queries de `Usuario`, usar:
+
+```ts
+select: { id: true, email: true, role: true }
+```
+
+### 5.3 Nunca spread direto (já parcialmente correto — verificar)
+
+Padrão atual das actions usa `validated.data` do `safeParse` — isso já é correto.
+Confirmar que nenhuma action passa `formData` diretamente sem parse.
+
+---
+
+## Fase 6 — Auditoria (MÉDIA)
+
+### 6.1 Adicionar ao schema Prisma
+
+```prisma
+model AuditLog {
+  id        String   @id @default(cuid())
+  usuarioId String?
+  acao      String
+  recurso   String
+  recursoId String?
+  ip        String?
+  payload   Json?
+  criadoEm DateTime @default(now())
+
+  @@map("audit_logs")
+}
+```
+
+### 6.2 Criar `src/lib/audit.ts`
+
+```ts
+import { prisma } from './prisma';
+
+interface AuditoriaParams {
+  usuarioId?: string;
+  acao: string;
+  recurso: string;
+  recursoId?: string;
+  ip?: string;
+  payload?: Record<string, unknown>;
+}
+
+export async function registrar(params: AuditoriaParams): Promise<void> {
+  await prisma.auditLog.create({ data: params });
+}
+```
+
+### 6.3 Eventos a registrar
+
+| Ação           | Recurso       |
+| -------------- | ------------- |
+| `login`        | `usuario`     |
+| `login_falhou` | `usuario`     |
+| `logout`       | `usuario`     |
+| `criar`        | cada entidade |
+| `atualizar`    | cada entidade |
+| `deletar`      | cada entidade |
+
+---
+
+## Fase 7 — Separação de camadas (MÉDIA)
+
+**Refatorar junto com as fases 1 e 2 para não ter retrabalho.**
+
+### 7.1 Estrutura de diretórios proposta
+
+```
+src/
+  actions/         # já existe — apenas orquestra
+  services/        # CRIAR — regra de negócio
+  repositories/    # CRIAR — queries Prisma
+  lib/
+    auth/          # CRIAR — password, session, authorize, requireAuth
+    audit.ts       # CRIAR
+    rateLimit.ts   # CRIAR
+    schemas/       # já existe
+```
+
+### 7.2 Fluxo por camada
+
+```
+Action → validate (Zod) → requireAuth → authorize → service → repository → audit → retorno
+```
+
+### 7.3 Exemplo de repository
+
+```ts
+// src/repositories/paciente.repository.ts
+import { prisma } from '../lib/prisma';
+import type { Prisma } from '../generated/prisma';
+
+export const pacienteRepository = {
+  async criar(data: Prisma.PacienteCreateInput) {
+    return prisma.paciente.create({ data });
+  },
+  async listar() {
+    return prisma.paciente.findMany({
+      select: {
+        id: true,
+        nome: true,
+        telefone: true,
+        email: true,
+        criadoEm: true,
+      },
+    });
+  },
+};
+```
+
+---
+
+## Fase 8 — CSRF (BAIXA — Next.js já cobre parcialmente)
+
+**Server Actions têm proteção CSRF nativa do Next.js via origin checking.**
+Para as rotas de API em `src/app/api/`:
+
+### 8.1 Verificação de origin nas rotas de API
+
+Criar `src/lib/csrf.ts`:
+
+```ts
+export function verificarOrigin(request: Request): void {
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host');
+  if (!origin) return; // mesma origem (sem header origin)
+  if (!origin.includes(host ?? '')) {
+    throw new Error('CSRF: origin inválido');
+  }
+}
+```
+
+Aplicar em `src/app/api/exportar/route.ts` e `src/app/api/recibo/[id]/route.ts`.
+
+---
+
+## Fase 9 — Variáveis de ambiente (BAIXA)
+
+### 9.1 Situação atual
+
+`.env` contém:
+
+```
+DATABASE_URL="postgresql://docker:docker@localhost:5432/agendamentos?schema=public"
+```
+
+Credenciais `docker:docker` são apenas para desenvolvimento local — OK por enquanto.
+
+### 9.2 Para produção, adicionar ao `.env.example`
+
+```
+DATABASE_URL=""
+SESSION_SECRET=""          # string aleatória de 32+ chars
+NODE_ENV="production"
+```
+
+### 9.3 Regra
+
+Nunca usar `NEXT_PUBLIC_` para segredos.
+Atualmente o projeto não usa — manter assim.
+
+---
+
+## Fase 10 — PostgreSQL seguro (BAIXA — infra de produção)
+
+### 10.1 Usuário com permissões mínimas
+
+```sql
+CREATE USER agendamentos_app WITH PASSWORD 'senha_forte_aqui';
+GRANT CONNECT ON DATABASE agendamentos TO agendamentos_app;
+GRANT USAGE ON SCHEMA public TO agendamentos_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO agendamentos_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO agendamentos_app;
+```
+
+### 10.2 SSL na connection string (produção)
+
+```
+DATABASE_URL="postgresql://agendamentos_app:senha@host:5432/agendamentos?sslmode=require"
+```
+
+### 10.3 docker-compose.yml (desenvolvimento)
+
+Trocar credenciais padrão `docker:docker` por algo menos óbvio mesmo em dev:
+
+```yaml
+environment:
+  POSTGRES_USER: agendamentos_dev
+  POSTGRES_PASSWORD: dev_senha_local
+  POSTGRES_DB: agendamentos
+```
+
+---
+
+## Checklist de progresso
+
+### Fase 1 — Autenticação ✅ (commit c8418ed)
+
+- [x] Modelo `Usuario` e `Session` no schema
+- [x] Migração no banco
+- [x] `src/lib/auth/password.ts` com argon2
+- [x] `src/lib/schemas/auth-schema.ts`
+- [x] `src/lib/auth/session.ts` com iron-session
+- [x] `SESSION_SECRET` no .env
+- [x] Action de login com bloqueio por tentativas
+- [x] Action de logout com revogação no banco
+- [x] Página `/login`
+
+### Fase 2 — Autorização (parcial — 2026-02-27)
+
+- [ ] `src/lib/auth/authorize.ts` com RBAC
+- [x] `src/lib/auth/requireAuth.ts`
+- [ ] Todas as Server Actions protegidas
+- [x] `src/middleware.ts` redirecionando rotas protegidas
+
+### Fase 3 — Rate Limiting ✅ (2026-02-27)
+
+- [x] `pnpm add rate-limiter-flexible`
+- [x] `src/lib/rateLimit.ts`
+- [x] Aplicado no login
+
+### Fase 4 — HTTP Headers
+
+- [ ] `next.config.ts` com security headers
+
+### Fase 5 — Zod
+
+- [ ] Confirmar que nenhum schema usa `.passthrough()`
+- [ ] Selects explícitos em queries de `Usuario`
+
+### Fase 6 — Auditoria
+
+- [ ] Modelo `AuditLog` no schema
+- [ ] `src/lib/audit.ts`
+- [ ] Chamadas de auditoria nas actions
+
+### Fase 7 — Separação de camadas
+
+- [ ] Criar `src/repositories/`
+- [ ] Criar `src/services/`
+
+### Fase 8 — CSRF
+
+- [ ] `src/lib/csrf.ts`
+- [ ] Aplicado nas rotas de API
+
+### Fase 9 — Variáveis de ambiente
+
+- [ ] `.env.example` completo
+
+### Fase 10 — PostgreSQL
+
+- [ ] Usuário com permissões mínimas (produção)
+- [ ] SSL na connection string (produção)
+- [ ] Credenciais do docker-compose atualizadas

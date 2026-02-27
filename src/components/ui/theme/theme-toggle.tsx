@@ -3,9 +3,23 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from './theme-provider';
 
-export function ThemeToggle() {
+export function ThemeToggle({ iconOnly = false }: { iconOnly?: boolean }) {
   const { theme, toggle } = useTheme();
   const isLight = theme === 'light';
+
+  if (iconOnly) {
+    return (
+      <button
+        onClick={toggle}
+        aria-label={
+          isLight ? 'Mudar para modo escuro' : 'Mudar para modo claro'
+        }
+        className="flex items-center justify-center w-full h-10 rounded-lg transition-colors hover:bg-background-tertiary text-content-secondary hover:text-content-primary"
+      >
+        {isLight ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      </button>
+    );
+  }
 
   return (
     <button

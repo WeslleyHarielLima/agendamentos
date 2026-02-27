@@ -20,6 +20,7 @@ import type { Compromisso } from '@/lib/compromisso-utils';
 import { deletarCompromisso } from '@/actions/deletar-compromisso';
 import { EditAppointmentForm } from '@/components/ui/edit-appointment-form';
 import { FinalizarAtendimentoDialog } from '@/components/ui/finalizar-atendimento-dialog';
+import { SwipeableRow } from '@/components/ui/swipeable-row';
 import { Button } from '@/components/ui/button';
 
 type AppointmentCardProps = {
@@ -81,92 +82,148 @@ export function AppointmentCard({ compromisso }: AppointmentCardProps) {
     }
   };
 
+  // CANCELADO tem 2 botões, outros status têm 3
+  const actionsWidth = compromisso.status === 'CANCELADO' ? 128 : 192;
+
   return (
     <>
-      <div className="flex items-start gap-4 px-5 py-4 border-b border-border-divisor last:border-b-0 hover:bg-background-secondary transition-colors group">
-        {/* Horário */}
-        <div className="flex items-center gap-1.5 min-w-14 pt-0.5">
-          <Clock className="size-3.5 text-content-tertiary shrink-0" />
-          <span className="text-label-small-size text-content-tertiary">
-            {formatHora(compromisso.dataMarcacao)}
-          </span>
-        </div>
-
-        {/* Divider vertical */}
-        <div className="w-px self-stretch bg-border-divisor shrink-0" />
-
-        {/* Conteúdo */}
-        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <User className="size-3.5 text-content-brand shrink-0" />
-            <span className="text-label-medium-size text-content-primary truncate">
-              {compromisso.pacienteNome}
-            </span>
-            <StatusBadge status={compromisso.status} />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Stethoscope className="size-3.5 text-content-secondary shrink-0" />
-            <span className="text-paragraph-medium-size text-content-secondary truncate">
-              {compromisso.procedimento}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Phone className="size-3.5 text-content-tertiary shrink-0" />
-            <span className="text-paragraph-small-size text-content-tertiary">
-              {compromisso.telefone}
-            </span>
-          </div>
-
-          {compromisso.valorCobrado !== null && (
-            <span className="text-paragraph-small-size text-content-brand">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              }).format(compromisso.valorCobrado)}
-            </span>
-          )}
-        </div>
-
-        {/* Botões de ação — visíveis ao hover */}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-center">
-          {compromisso.status === 'AGENDADO' && (
+      <SwipeableRow
+        actionsWidth={actionsWidth}
+        className="border-b border-border-divisor last:border-b-0"
+        renderActions={(close) => (
+          <div className="flex items-stretch w-full h-full">
+            {compromisso.status === 'AGENDADO' && (
+              <button
+                onClick={() => {
+                  close();
+                  setFinalizarOpen(true);
+                }}
+                className="flex-1 bg-green-600 active:bg-green-700 flex flex-col items-center justify-center gap-1 text-white"
+              >
+                <CheckCheck className="size-5" />
+                <span className="text-xs font-medium">Finalizar</span>
+              </button>
+            )}
+            {compromisso.status === 'REALIZADO' && (
+              <button
+                onClick={() => {
+                  close();
+                  window.open(`/api/recibo/${compromisso.id}`, '_blank');
+                }}
+                className="flex-1 bg-content-brand active:opacity-80 flex flex-col items-center justify-center gap-1 text-white"
+              >
+                <FileDown className="size-5" />
+                <span className="text-xs font-medium">Recibo</span>
+              </button>
+            )}
             <button
-              onClick={() => setFinalizarOpen(true)}
-              className="p-1.5 rounded-md text-content-tertiary hover:text-green-400 hover:bg-background-primary transition-colors"
-              aria-label="Finalizar atendimento"
+              onClick={() => {
+                close();
+                setEditOpen(true);
+              }}
+              className="flex-1 bg-background-tertiary active:bg-background-secondary border-l border-border-divisor flex flex-col items-center justify-center gap-1 text-content-primary"
             >
-              <CheckCheck className="size-3.5" />
+              <Pencil className="size-5" />
+              <span className="text-xs font-medium">Editar</span>
             </button>
-          )}
-          {compromisso.status === 'REALIZADO' && (
             <button
-              onClick={() =>
-                window.open(`/api/recibo/${compromisso.id}`, '_blank')
-              }
-              className="p-1.5 rounded-md text-content-tertiary hover:text-content-brand hover:bg-background-primary transition-colors"
-              aria-label="Baixar recibo"
+              onClick={() => {
+                close();
+                setDeleteOpen(true);
+              }}
+              className="flex-1 bg-red-600 active:bg-red-700 border-l border-red-700 flex flex-col items-center justify-center gap-1 text-white"
             >
-              <FileDown className="size-3.5" />
+              <Trash2 className="size-5" />
+              <span className="text-xs font-medium">Excluir</span>
             </button>
-          )}
-          <button
-            onClick={() => setEditOpen(true)}
-            className="p-1.5 rounded-md text-content-tertiary hover:text-content-primary hover:bg-background-primary transition-colors"
-            aria-label="Editar agendamento"
-          >
-            <Pencil className="size-3.5" />
-          </button>
-          <button
-            onClick={() => setDeleteOpen(true)}
-            className="p-1.5 rounded-md text-content-tertiary hover:text-destructive hover:bg-background-primary transition-colors"
-            aria-label="Excluir agendamento"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
+          </div>
+        )}
+      >
+        <div className="flex items-start gap-4 px-5 py-4 bg-background-tertiary hover:bg-background-secondary transition-colors group">
+          {/* Horário */}
+          <div className="flex items-center gap-1.5 min-w-14 pt-0.5">
+            <Clock className="size-3.5 text-content-tertiary shrink-0" />
+            <span className="text-label-small-size text-content-tertiary">
+              {formatHora(compromisso.dataMarcacao)}
+            </span>
+          </div>
+
+          {/* Divider vertical */}
+          <div className="w-px self-stretch bg-border-divisor shrink-0" />
+
+          {/* Conteúdo */}
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <User className="size-3.5 text-content-brand shrink-0" />
+              <span className="text-label-medium-size text-content-primary truncate">
+                {compromisso.pacienteNome}
+              </span>
+              <StatusBadge status={compromisso.status} />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Stethoscope className="size-3.5 text-content-secondary shrink-0" />
+              <span className="text-paragraph-medium-size text-content-secondary truncate">
+                {compromisso.procedimento}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Phone className="size-3.5 text-content-tertiary shrink-0" />
+              <span className="text-paragraph-small-size text-content-tertiary">
+                {compromisso.telefone}
+              </span>
+            </div>
+
+            {compromisso.valorCobrado !== null && (
+              <span className="text-paragraph-small-size text-content-brand">
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                }).format(compromisso.valorCobrado)}
+              </span>
+            )}
+          </div>
+
+          {/* Botões de ação — somente desktop, visíveis ao hover */}
+          <div className="hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-center">
+            {compromisso.status === 'AGENDADO' && (
+              <button
+                onClick={() => setFinalizarOpen(true)}
+                className="p-1.5 rounded-md text-content-tertiary hover:text-green-400 hover:bg-background-primary transition-colors"
+                aria-label="Finalizar atendimento"
+              >
+                <CheckCheck className="size-3.5" />
+              </button>
+            )}
+            {compromisso.status === 'REALIZADO' && (
+              <button
+                onClick={() =>
+                  window.open(`/api/recibo/${compromisso.id}`, '_blank')
+                }
+                className="p-1.5 rounded-md text-content-tertiary hover:text-content-brand hover:bg-background-primary transition-colors"
+                aria-label="Baixar recibo"
+              >
+                <FileDown className="size-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => setEditOpen(true)}
+              className="p-1.5 rounded-md text-content-tertiary hover:text-content-primary hover:bg-background-primary transition-colors"
+              aria-label="Editar agendamento"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+            <button
+              onClick={() => setDeleteOpen(true)}
+              className="p-1.5 rounded-md text-content-tertiary hover:text-destructive hover:bg-background-primary transition-colors"
+              aria-label="Excluir agendamento"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
         </div>
-      </div>
+      </SwipeableRow>
 
       {/* Dialog de edição */}
       <EditAppointmentForm

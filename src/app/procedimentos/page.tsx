@@ -17,7 +17,7 @@ export default async function ProcedimentosPage() {
   return (
     <main className="px-6 py-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center size-10 rounded-xl bg-background-tertiary border border-border-primary">
             <Stethoscope className="size-5 text-content-brand" />

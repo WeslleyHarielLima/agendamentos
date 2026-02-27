@@ -46,9 +46,9 @@ export default async function Home({
   const grupos = grupoCompromissosporPeriodo(compromissos);
 
   return (
-    <div className="flex gap-6 p-6 bg-background-primary min-h-screen">
-      {/* Calendário fixo à esquerda */}
-      <div className="w-72 shrink-0">
+    <div className="flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background-primary min-h-screen">
+      {/* Calendário */}
+      <div className="w-full md:w-72 md:shrink-0">
         <Calendar
           mes={mes}
           dataSelecionada={dataSelecionada}
@@ -56,9 +56,9 @@ export default async function Home({
         />
       </div>
 
-      {/* Agenda filtrada à direita */}
+      {/* Agenda filtrada */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <div>
             <h1 className="text-title-size text-content-primary mb-1">
               Sua Agenda

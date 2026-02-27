@@ -8,6 +8,7 @@ import { Dialog } from 'radix-ui';
 
 import { deletarPaciente } from '@/actions/deletar-paciente';
 import { PatientForm } from '@/components/ui/patient-form';
+import { SwipeableRow } from '@/components/ui/swipeable-row';
 import { Button } from '@/components/ui/button';
 
 type Paciente = {
@@ -33,7 +34,13 @@ type PacientesListProps = {
   pacientes: Paciente[];
 };
 
-function DeletePacienteButton({ paciente }: { paciente: Paciente }) {
+function DeletePacienteButton({
+  paciente,
+  children,
+}: {
+  paciente: Paciente;
+  children?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -52,12 +59,14 @@ function DeletePacienteButton({ paciente }: { paciente: Paciente }) {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button
-          className="p-1.5 text-content-tertiary hover:text-destructive rounded-md hover:bg-background-secondary transition-colors"
-          aria-label="Excluir paciente"
-        >
-          <Trash2 className="size-4" />
-        </button>
+        {children ?? (
+          <button
+            className="p-1.5 text-content-tertiary hover:text-destructive rounded-md hover:bg-background-secondary transition-colors"
+            aria-label="Excluir paciente"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        )}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 z-40 backdrop-blur-sm" />
@@ -141,39 +150,66 @@ export function PacientesList({ pacientes }: PacientesListProps) {
               .join(' · ');
 
             return (
-              <div
+              <SwipeableRow
                 key={paciente.id}
-                className="flex items-center gap-4 px-5 py-4 border-b border-border-divisor last:border-b-0 hover:bg-background-primary transition-colors group"
+                actionsWidth={128}
+                className="border-b border-border-divisor last:border-b-0"
+                renderActions={(close) => (
+                  <div className="flex items-stretch w-full h-full">
+                    <PatientForm paciente={paciente}>
+                      <button
+                        onClick={close}
+                        className="flex-1 bg-content-brand active:opacity-80 flex flex-col items-center justify-center gap-1 text-white"
+                        aria-label="Editar paciente"
+                      >
+                        <Pencil className="size-5" />
+                        <span className="text-xs font-medium">Editar</span>
+                      </button>
+                    </PatientForm>
+                    <DeletePacienteButton paciente={paciente}>
+                      <button
+                        className="flex-1 bg-red-600 active:bg-red-700 border-l border-red-700 flex flex-col items-center justify-center gap-1 text-white w-full h-full"
+                        aria-label="Excluir paciente"
+                      >
+                        <Trash2 className="size-5" />
+                        <span className="text-xs font-medium">Excluir</span>
+                      </button>
+                    </DeletePacienteButton>
+                  </div>
+                )}
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-label-medium-size text-content-primary truncate">
-                    {paciente.nome}
-                  </p>
-                  <p className="text-paragraph-small-size text-content-tertiary truncate">
-                    {subInfo}
-                  </p>
-                </div>
+                <div className="flex items-center gap-4 px-5 py-4 bg-background-secondary hover:bg-background-primary transition-colors group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-label-medium-size text-content-primary truncate">
+                      {paciente.nome}
+                    </p>
+                    <p className="text-paragraph-small-size text-content-tertiary truncate">
+                      {subInfo}
+                    </p>
+                  </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <PatientForm paciente={paciente}>
-                    <button
-                      className="p-1.5 text-content-secondary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
-                      aria-label="Editar paciente"
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                  </PatientForm>
-                  <DeletePacienteButton paciente={paciente} />
-                </div>
+                  {/* Botões de ação — somente desktop, visíveis ao hover */}
+                  <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <PatientForm paciente={paciente}>
+                      <button
+                        className="p-1.5 text-content-secondary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
+                        aria-label="Editar paciente"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                    </PatientForm>
+                    <DeletePacienteButton paciente={paciente} />
+                  </div>
 
-                <Link
-                  href={`/pacientes/${paciente.id}`}
-                  className="p-1.5 text-content-tertiary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors"
-                  aria-label="Ver histórico"
-                >
-                  <ChevronRight className="size-4" />
-                </Link>
-              </div>
+                  <Link
+                    href={`/pacientes/${paciente.id}`}
+                    className="p-1.5 text-content-tertiary hover:text-content-primary rounded-md hover:bg-background-primary transition-colors shrink-0"
+                    aria-label="Ver histórico"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Link>
+                </div>
+              </SwipeableRow>
             );
           })
         )}
